@@ -10,12 +10,12 @@ using NativeUI;
 using System.Windows.Forms;
 using System.Drawing;
 
-namespace ProjectSpeedometerGTAV
+namespace TDUSCSpeedometerGTAV
 {
-    public class PJSpeedometerGTAV : Script
+    public class TDUSCSpeedoGTAV : Script
     {
 
-        public PJSpeedometerGTAV()
+        public TDUSCSpeedoGTAV()
         {
             Tick += OnTick;
         }

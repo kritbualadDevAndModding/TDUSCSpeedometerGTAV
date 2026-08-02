@@ -7,8 +7,8 @@
     <ProjectGuid>{19B96D3D-DCFA-44A8-9C9A-8ADBFB339D94}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>ProjectSpeedometerGTAV</RootNamespace>
-    <AssemblyName>ProjectSpeedometerGTAV</AssemblyName>
+    <RootNamespace>TDUSCSpeedometerGTAV</RootNamespace>
+    <AssemblyName>TDUSCSpeedometerGTAV</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -68,7 +68,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="PJSpeedometerGTAV.cs" />
+    <Compile Include="TDUSCSpeedoGTAV.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
