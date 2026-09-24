@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Reflection;
 using System.Windows.Forms;
 
 namespace TDUSCSpeedometerGTAV
@@ -16,7 +17,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.2";
+        private string version = "0.3";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -50,11 +51,20 @@ namespace TDUSCSpeedometerGTAV
         private const float MinSpeedThreshold = 3.0f;
 
         // TDU Solar Crown Speedometer
-        private bool isMainHUDModEnabled = true;
+        private bool isMainHUDModEnabled;
         private bool isSpeedometerBackgroundDemo;
         private bool isRevEngineCurrent;
-        private bool isABSHUD = true;
-        private bool isTCSHUD = true;
+        private bool isABSHUD;
+        private bool isTCSHUD;
+
+        private bool isKMH;
+        private bool isKMH_DNKNOR;
+        private bool isKMH_RUS;
+        private bool isKMH_TUR;
+        private bool isKMH_UKR;
+        private bool isKMH_VN;
+
+        private bool isMPH;
 
         // config ini
         private ScriptSettings config;
@@ -75,9 +85,63 @@ namespace TDUSCSpeedometerGTAV
         private const string BackgroundTextureDict2 = "!TDUSCDemoHUDBackground";
         private const string BackgroundTextureName2 = "background2";
 
+
+
         private ScaledTexture ImageKMH;
         private const string ImageKMHDict = "!TDUSCDemoHUDBackground";
         private const string ImageKMHName = "kmh";
+
+        private ScaledTexture ImageKMH_DNKNOR;
+        private const string ImageKMH_DNKNORDict = "!TDUSCDemoHUDBackground";
+        private const string ImageKMH_DNKNORName = "kmh_DenmarkNorway";
+
+        private ScaledTexture ImageKMH_RUS;
+        private const string ImageKMH_RUSDict = "!TDUSCDemoHUDBackground";
+        private const string ImageKMH_RUSName = "kmh_Russian";
+
+        private ScaledTexture ImageKMH_TUR;
+        private const string ImageKMH_TURDict = "!TDUSCDemoHUDBackground";
+        private const string ImageKMH_TURName = "kmh_Turkish";
+
+        private ScaledTexture ImageKMH_UKR;
+        private const string ImageKMH_UKRDict = "!TDUSCDemoHUDBackground";
+        private const string ImageKMH_UKRName = "kmh_Ukriane";
+
+        private ScaledTexture ImageKMH_VNM;
+        private const string ImageKMH_VNDict = "!TDUSCDemoHUDBackground";
+        private const string ImageKMH_VNName = "kmh_Vietnam";
+
+        private ScaledTexture ImageKMH_NLD;
+        private const string ImageKMH_NLDDict = "!TDUSCDemoHUDBackground";
+        private const string ImageKMH_NLDName = "kmh_Nederlands";
+
+        private ScaledTexture ImageMPH;
+        private const string ImageMPHDict = "!TDUSCDemoHUDBackground";
+        private const string ImageMPHName = "mph";
+
+        private ScaledTexture ImageMPH_NLD;
+        private const string ImageMPH_NLDDict = "!TDUSCDemoHUDBackground";
+        private const string ImageMPH_NLDName = "mph_Nederlands";
+
+        private ScaledTexture ImageMPH_RUS;
+        private const string ImageMPH_RUSDict = "!TDUSCDemoHUDBackground";
+        private const string ImageMPH_RUSName = "mph_Russian";
+
+        private ScaledTexture ImageMPH_TUR;
+        private const string ImageMPH_TURDict = "!TDUSCDemoHUDBackground";
+        private const string ImageMPH_TURName = "mph_Turkish";
+
+        private ScaledTexture ImageMPH_UKR;
+        private const string ImageMPH_UKRDict = "!TDUSCDemoHUDBackground";
+        private const string ImageMPH_UKRName = "mph_Ukriane";
+
+        private ScaledTexture ImageMPH_VNM;
+        private const string ImageMPH_VNMDict = "!TDUSCDemoHUDBackground";
+        private const string ImageMPH_VNMName = "mph_Vietnam";
+
+        private int isUnitsLanguage;
+
+        private float isSwitchUnits;
 
         private ScaledTexture DriftTextureImage;
         private const string DriftTextureDict = "!TDUSCDemoHUDBackground";
@@ -133,34 +197,59 @@ namespace TDUSCSpeedometerGTAV
         private const string RevEngineOffImageDict = "!TDUSCDemoHUDRev";
         private const string RevEngineOffImageName = "rev_0000";
 
+        private int UseKMH;
+
+        private float speedKMH = 3.6f;
+        private float speedMPH = 2.236936f;
+
+        private Keys keyOpenMenu;
         public TDUSCSpeedoGTAV()
         {
             // อ่านไฟล์ .ini
             config = ScriptSettings.Load("scripts\\TDUSCSpeedometerGTAV.ini");
-            UIPositionX = config.GetValue<float>("PositionHUD", "PosX", UIPositionX);
-            UIPositionY = config.GetValue<float>("PositionHUD", "PosY", UIPositionY);
 
-            UISize = config.GetValue<float>("SizeHUD", "Scale", UISize);
+            keyOpenMenu = config.GetValue<Keys>("Open_Menu", "MenuKey", keyOpenMenu);
+            UIPositionX = config.GetValue<float>("Position_HUD", "PosX", UIPositionX);
+            UIPositionY = config.GetValue<float>("Position_HUD", "PosY", UIPositionY);
 
-            A_GearColour = config.GetValue<int>("GearColourRGB", "A", A_GearColour);
-            R_GearColour = config.GetValue<int>("GearColourRGB", "R", R_GearColour);
-            G_GearColour = config.GetValue<int>("GearColourRGB", "G", G_GearColour);
-            B_GearColour = config.GetValue<int>("GearColourRGB", "B", B_GearColour);
+            UISize = config.GetValue<float>("Size_HUD", "Scale", UISize);
 
-            rpmMin = config.GetValue<int>("RPMSettings", "RPMMin", rpmMin);
-            rpmMax = config.GetValue<int>("RPMSettings", "RPMMax", rpmMax);
+            A_GearColour = config.GetValue<int>("Gear_Colour_RGB", "A", A_GearColour);
+            R_GearColour = config.GetValue<int>("Gear_Colour_RGB", "R", R_GearColour);
+            G_GearColour = config.GetValue<int>("Gear_Colour_RGB", "G", G_GearColour);
+            B_GearColour = config.GetValue<int>("Gear_Colour_RGB", "B", B_GearColour);
+
+            rpmMin = config.GetValue<int>("RPM_Settings", "RPMMin", rpmMin);
+            rpmMax = config.GetValue<int>("RPM_Settings", "RPMMax", rpmMax);
+
+            UseKMH = config.GetValue<int>("Units_Settings", "UseKMH", UseKMH);
+            isUnitsLanguage = config.GetValue<int>("Units_Settings", "LanguageUnits", isUnitsLanguage);
+
+            isABSHUD = config.GetValue<bool>("HUD_SETTINGS", "ABSHUD", isABSHUD);
+            isTCSHUD = config.GetValue<bool>("HUD_SETTINGS", "TCSHUD", isTCSHUD);
+            isMainHUDModEnabled = config.GetValue<bool>("HUD_SETTINGS", "Mod_Enabled", isMainHUDModEnabled);
 
             _menuPool = new MenuPool();
             _mainMenu = new UIMenu("TDUSCSpeedoV", "Version " + version + " by " + credits);
             _menuPool.Add(_mainMenu);
 
             // 2. Create the Checkbox Item (Boolean toggle)
-            UIMenuCheckboxItem modEnabledHUD = new UIMenuCheckboxItem("Mod Enabled", true, "Mod Show and Hide HUD for Test Drive Unlimited Solar Crown Speedometer");
+            UIMenuCheckboxItem modEnabledHUD = new UIMenuCheckboxItem("Mod Enabled", isMainHUDModEnabled, "Mod Show and Hide HUD for Test Drive Unlimited Solar Crown Speedometer");
             UIMenuCheckboxItem ABSToggle = new UIMenuCheckboxItem("ABS HUD", isABSHUD);
             UIMenuCheckboxItem TCSToggle = new UIMenuCheckboxItem("TCS HUD", isTCSHUD);
 
+            var itemsListUnits = new List<dynamic> { "Imperial", "Metric" };
+            var UnitsListItem = new UIMenuListItem("Units", itemsListUnits, UseKMH, "Metric = KM/H\nImperial = MPH");
+
+            var itemsListLanguage = new List<dynamic> { "Default", "Denmark / Norway", "Nederlands" ,"Russian" , "Turkish", "Ukriane", "Vietnamese" };
+            var LanguageListItem = new UIMenuListItem("Language Units", itemsListLanguage, isUnitsLanguage, "Select Language for KM/H or MPH");
+
+
+            //         "kmh_DenmarkNorway" "kmh_Russian" "kmh_Turkish" "kmh_Ukriane" "kmh_Vietnam"
             // 3. Add the checkbox to the menu
             _mainMenu.AddItem(modEnabledHUD);
+            _mainMenu.AddItem(UnitsListItem);
+            _mainMenu.AddItem(LanguageListItem);
             _mainMenu.AddItem(ABSToggle);
             _mainMenu.AddItem(TCSToggle);
 
@@ -172,10 +261,14 @@ namespace TDUSCSpeedometerGTAV
                     if (Checked)
                     {
                         isMainHUDModEnabled = true;
+                        config.SetValue<bool>("HUD_SETTINGS", "Mod_Enabled", true);
+                        config.Save();
                     }
                     else
                     {
                         isMainHUDModEnabled = false;
+                        config.SetValue<bool>("HUD_SETTINGS", "Mod_Enabled", false);
+                        config.Save();
                     }
                 }
                 if (item == ABSToggle)
@@ -183,10 +276,14 @@ namespace TDUSCSpeedometerGTAV
                     if (Checked)
                     {
                         isABSHUD = true;
+                        config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", true);
+                        config.Save();
                     }
                     else
                     {
                         isABSHUD = false;
+                        config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", false);
+                        config.Save();
                     }
                 }
                 if (item == TCSToggle)
@@ -194,25 +291,151 @@ namespace TDUSCSpeedometerGTAV
                     if (Checked)
                     {
                         isTCSHUD = true;
+                        config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", true);
+                        config.Save();
                     }
                     else
                     {
                         isTCSHUD = false;
+                        config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", false);
+                        config.Save();
+                    }
+                }
+            };
+            // 5. ดักจับเหตุการณ์ (Event) เมื่อมีการเปลี่ยนแปลงหรือกดปุ่ม
+
+            // เมื่อผู้เล่นกดปุ่มซ้าย-ขวา เปลี่ยนค่า (< 1 > เป็น < 2 >)
+
+
+            _mainMenu.OnListChange += (sender, item, index) =>
+            {
+                if (item == UnitsListItem)
+                {
+                    // ทำงานทันทีเมื่อเปลี่ยนตัวเลือก (แสดงข้อความแจ้งเตือนมุมซ้าย)
+
+                    switch (index)
+                    {
+
+                        case 0:
+                            // MPH
+                            isSwitchUnits = speedMPH;
+                            isKMH = false;
+                            isMPH = true;
+                            config.SetValue<int>("Units_Settings", "UseKMH", 0);
+                            config.Save();
+                            break;
+                        case 1:
+                            // KM/H
+                            isSwitchUnits = speedKMH;
+                            isKMH = true;
+                            isMPH = false;
+                            config.SetValue<int>("Units_Settings", "UseKMH", 1);
+                            config.Save();
+                            break;
                     }
                 }
 
+                if (item == LanguageListItem)
+                {
+                    isUnitsLanguage = index;
+
+                    switch (index)
+                    {
+                        case 0:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 0);
+                            config.Save();
+                            break;
+                        case 1:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 1);
+                            config.Save();
+                            break;
+                        case 2:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 2);
+                            config.Save();
+                            break;
+                        case 3:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 3);
+                            config.Save();
+                            break;
+                        case 4:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 4);
+                            config.Save();
+                            break;
+                        case 5:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 5);
+                            config.Save();
+                            break;
+                        case 6:
+                            config.SetValue<int>("Units_Settings", "LanguageUnits", 6);
+                            config.Save();
+                            break;
+                    }
+                }
             };
 
-            Tick += OnTick;
-            KeyUp += OnKeyDown;
+            _mainMenu.OnItemSelect += (sender, selectedItem, index) =>
+            {
+                // Button Only
+            };
+                Tick += OnTick;
+                KeyUp += OnKeyDown;
 
 
+            switch (UseKMH)
+            {
+                case 1:
+                    isSwitchUnits = 3.6f;
+                    isKMH = true;
+                    isMPH = false;
+                    break;
+
+                case 0:
+                    isSwitchUnits = 2.236936f;
+                    isKMH = false;
+                    isMPH = true;
+                    break;
+            }
+
+            switch (isABSHUD)
+            {
+                case true:
+                    isABSHUD = true;
+                    break;
+
+                case false:
+                    isABSHUD = false;
+                    break;
+            }
+
+            switch (isTCSHUD)
+            {
+                case true:
+                    isTCSHUD = true;
+                    break;
+
+                case false:
+                    isTCSHUD = false;
+                    break;
+            }
 
             BackgroundTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict, BackgroundTextureName);
 
             BackgroundTextureImage2 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict2, BackgroundTextureName2);
 
             ImageKMH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMHDict, ImageKMHName);
+            ImageKMH_DNKNOR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_DNKNORDict, ImageKMH_DNKNORName);
+            ImageKMH_RUS = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_RUSDict, ImageKMH_RUSName);
+            ImageKMH_TUR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_TURDict, ImageKMH_TURName);
+            ImageKMH_UKR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_UKRDict, ImageKMH_UKRName);
+            ImageKMH_VNM = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_VNDict, ImageKMH_VNName);
+            ImageKMH_NLD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_NLDDict, ImageKMH_NLDName);
+
+            ImageMPH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPHDict, ImageMPHName);
+            ImageMPH_NLD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_NLDDict, ImageMPH_NLDName);
+            ImageMPH_RUS = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_RUSDict, ImageMPH_RUSName);
+            ImageMPH_TUR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_TURDict, ImageMPH_TURName);
+            ImageMPH_UKR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_UKRDict, ImageMPH_UKRName);
+            ImageMPH_VNM = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_VNMDict, ImageMPH_VNMName);
 
             DriftTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), DriftTextureDict, DriftTextureName);
         
@@ -239,14 +462,12 @@ namespace TDUSCSpeedometerGTAV
 
             VehicleEnterExit();
             _menuPool.ProcessMenus();
-            //   SpeedTextDemo();
             TDUSC_HUDDemoTick();
             VehicleSlowMotionFranklin();
         }
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
-            // Press the F5 key to toggle the menu open and closed
-            if (e.KeyCode == Keys.K)
+            if (e.KeyCode == keyOpenMenu)
             {
                 _mainMenu.Visible = !_mainMenu.Visible;
             }
@@ -270,9 +491,70 @@ namespace TDUSCSpeedometerGTAV
                     // Ensure the player is actually in a vehicle
                     if (currentVehicle != null && currentVehicle.Exists())
                     {
+
+                        // Outline
                         BackgroundTextureImage2.Draw();
                         BackgroundTextureImage.Draw();
-                        ImageKMH.Draw();
+
+                        if (isKMH)
+                        {
+
+                            switch (isUnitsLanguage)
+                            {
+
+                                case 0:
+                                    ImageKMH.Draw();
+                                    break;
+                                case 1:
+                                    ImageKMH_DNKNOR.Draw();
+                                    break;
+                                case 2:
+                                    ImageKMH_NLD.Draw();
+                                    break;
+                                case 3:
+                                    ImageKMH_RUS.Draw();
+                                    break;
+                                case 4:
+                                    ImageKMH_TUR.Draw();
+                                    break;
+                                case 5:
+                                    ImageKMH_UKR.Draw();
+                                    break;
+                                case 6:
+                                    ImageKMH_VNM.Draw();
+                                    break;
+                            }
+                        }
+
+                        if (isMPH)
+                        {
+                            switch (isUnitsLanguage)
+                            {
+                                case 0:
+                                    ImageMPH.Draw();
+                                    break;
+                                case 1:
+                                    ImageMPH.Draw();
+                                    break;
+                                case 2:
+                                    ImageMPH_NLD.Draw();
+                                    break;
+                                case 3:
+                                    ImageMPH_RUS.Draw();
+                                    break;
+                                case 4:
+                                    ImageMPH_TUR.Draw();
+                                    break;
+                                case 5:
+                                    ImageMPH_UKR.Draw();
+                                    break;
+                                case 6:
+                                    ImageMPH_VNM.Draw();
+                                    break;
+                            }
+                        }
+
+
                         speedTextureImage.Draw();
                         LabelRPMDeafult.Draw();
 
@@ -293,7 +575,7 @@ namespace TDUSCSpeedometerGTAV
 
                         // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
                         // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
-                        float speedKmh = veh.Speed * 3.6f;
+                        float speedKmh = veh.Speed * isSwitchUnits;
 
                         // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
                         if (speedKmh > 1000f) speedKmh = 1000f;
@@ -307,7 +589,7 @@ namespace TDUSCSpeedometerGTAV
                         speedTextureImage.Texture = textureName;
 
 
-                        if(isRevEngineCurrent)
+                        if (isRevEngineCurrent)
                         {
                             /* RPM */
 
@@ -325,11 +607,11 @@ namespace TDUSCSpeedometerGTAV
                             RevTextureImage.Draw();
                         }
 
-                        if(isABSHUD)
+                        if (isABSHUD)
                         {
                             ABSTextureImage.Draw();
                         }
-                        if(isTCSHUD)
+                        if (isTCSHUD)
                         {
                             TCSTextureImage.Draw();
                         }
@@ -360,9 +642,10 @@ namespace TDUSCSpeedometerGTAV
                         // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
                         smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
 
-                     //   _wasEngineRunning = false;
+                        //   _wasEngineRunning = false;
                     }
                 }
+
                 // Phone and Character Wheel
                 Vehicle characterWheels = Game.Player.Character.CurrentVehicle;
                 if (characterWheels != null && characterWheels.Exists())
