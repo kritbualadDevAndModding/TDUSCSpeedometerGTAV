@@ -19,7 +19,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.6";
+        private string version = "0.8";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -43,6 +43,8 @@ namespace TDUSCSpeedometerGTAV
 
         private bool gearhudcolour_default;
         private bool gearhudcolour_red;
+        private bool gearhudcolour_default_season5;
+        private bool gearhudcolour_red_season5;
         // ตัวแปรเก็บสถานะล่าสุดเพื่อไม่ให้ Debug Notification ขึ้นรัวๆ ทุกเฟรม
         private bool wasPhoneVisible = false;
 
@@ -58,13 +60,6 @@ namespace TDUSCSpeedometerGTAV
         // Drift Status
         private const float DriftAngleThreshold = 10.0f;
         private const float MinSpeedThreshold = 3.0f;
-
-        // TDU Solar Crown Speedometer
-        private bool isMainHUDModEnabled;
-        private bool isSpeedometerBackgroundDemo;
-        private bool isRevEngineCurrent;
-        private bool isABSHUD;
-        private bool isTCSHUD;
 
         private bool isKMH;
         private bool isKMH_DNKNOR;
@@ -83,6 +78,8 @@ namespace TDUSCSpeedometerGTAV
         private ScaledTexture gearTexture_Red;
         private ScaledTexture gearTexture_Release;
         private ScaledTexture gearTexture_Release_Red;
+        private ScaledTexture gearTexture_Season5;
+        private ScaledTexture gearTexture_Season5_Red;
         private int lastGear = -1;
         private bool wasNeutral = false;
 
@@ -147,9 +144,15 @@ namespace TDUSCSpeedometerGTAV
         private ScaledTexture speedTextureImage;
         private const string SpeedTextureDict = "!TDUSCDemoHUDSpeed";
         private const string SpeedBaseTextureName = "speed_";
+
         private ScaledTexture RevTextureImage;
         private const string RevTextureDict = "!TDUSCDemoHUDRev";
         private const string RevBaseTextureName = "rev_";
+
+        private ScaledTexture RevTextureImage_Season5V1;
+        private const string RevTextureDict_Season5V1 = "!TDUSCReleaseHUDRevSeason5";
+        private const string RevBaseTextureNameSeason5V1 = "rev_";
+
         private ScaledTexture ABSTextureImage;
         private const string ABSTextureImageDict = "!TDUSCDemoHUDBackground";
         private const string ABSTextureImageName = "ABS";
@@ -172,13 +175,21 @@ namespace TDUSCSpeedometerGTAV
 
         // Release HUD
         private bool HUD_Release;
+        private bool HUD_Season5V1;
+
         private const string GearTextureDict_Release = "!TDUSCReleaseHUDGear";
+        private const string GearTextureDict_Season5 = "!TDUSCReleaseHUDGearSeason5";
+
         private ScaledTexture BackgroundTextureImage_Release;
         private const string BackgroundTextureDict_Release = "!TDUSCReleaseHUDBackground";
         private const string BackgroundTextureName_Release = "background";
         private ScaledTexture BackgroundTextureImage2_Release;
         private const string BackgroundTextureDict2_Release = "!TDUSCReleaseHUDBackground";
         private const string BackgroundTextureName2_Release = "background2";
+
+        private ScaledTexture BackgroundTextureImage_Season5V1;
+        private const string BackgroundTextureName_Season5V1 = "background_Season5_V1";
+
         private ScaledTexture ImageKMH_Release;
         private const string ImageKMHDict_Release = "!TDUSCReleaseHUDBackground";
         private const string ImageKMHName_Release = "kmh";
@@ -229,18 +240,26 @@ namespace TDUSCSpeedometerGTAV
         private const string SpeedBaseTextureName_Release = "speed_";
         private ScaledTexture RevTextureImage_Release;
         private const string RevTextureDict_Release = "!TDUSCReleaseHUDRev";
+
         private ScaledTexture ABSTextureImage_Release;
         private const string ABSTextureImageDict_Release = "!TDUSCReleaseHUDBackground";
         private const string ABSTextureImageName_Release = "ABS";
+        private ScaledTexture ABSTextureImage_Season5;
+        private const string ABSTextureImageName_Season5 = "ABS_Season5";
+
         private ScaledTexture TCSTextureImage_Release;
         private const string TCSTextureImageDict_Release = "!TDUSCReleaseHUDBackground";
         private const string TCSTextureImageName_Release = "TCS";
-
+        private ScaledTexture TCSTextureImage_Season5;
+        private const string TCSTextureImageName_Season5 = "TCS_Season5";
 
         private ScaledTexture LabelRPMDeafult_Release;
         private const string LabelRPMDefaultDict_Release = "!TDUSCReleaseHUDBackground";
         private const string LabelRPMDefaultName_Release = "rpm_9000";
 
+        private ScaledTexture HeadlightHUD_Season5;
+        private const string HeadlightHUD_Dict_Season5 = "!TDUSCReleaseHUDBackground";
+        private const string HeadlightHUD_Name_Season5 = "Lighting";
 
         // Set LabelRPM
         private ScaledTexture LabelRPMDeafult;
@@ -526,7 +545,7 @@ namespace TDUSCSpeedometerGTAV
             var itemsListLanguage = new List<dynamic> { "Default", "Denmark / Norway", "Nederlands", "Russian", "Turkish", "Ukriane", "Vietnamese" };
             var LanguageListItem = new UIMenuListItem("Language Units", itemsListLanguage, isUnitsLanguage, "Select Language for KM/H or MPH");
 
-            var itemsListVersionHUD = new List<dynamic> { "Demo", "Release" };
+            var itemsListVersionHUD = new List<dynamic> { "Demo", "Release" , "Season 5 V1"};
             var VersionHUDListItem = new UIMenuListItem("Version HUD", itemsListVersionHUD, SelectVersionHUD, "Select HUD");
 
             UIMenuItem selectDebugShowSubtitles = new UIMenuItem("Show Debug Name Cars");
@@ -706,13 +725,22 @@ namespace TDUSCSpeedometerGTAV
                         case 0:
                             HUD_Demo = true;
                             HUD_Release = false;
+                            HUD_Season5V1 = false;
                             config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
                             config.Save();
                             break;
                         case 1:
                             HUD_Demo = false;
                             HUD_Release = true;
+                            HUD_Season5V1 = false;
                             config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
+                            config.Save();
+                            break;
+                        case 2:
+                            HUD_Demo = false;
+                            HUD_Release = false;
+                            HUD_Season5V1 = true;
+                            config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
                             config.Save();
                             break;
                     }
@@ -771,10 +799,17 @@ namespace TDUSCSpeedometerGTAV
                 case 0:
                     HUD_Demo = true;
                     HUD_Release = false;
+                    HUD_Season5V1 = false;
                     break;
                 case 1:
                     HUD_Demo = false;
                     HUD_Release = true;
+                    HUD_Season5V1 = false;
+                    break;
+                case 2:
+                    HUD_Demo = false;
+                    HUD_Release = false;
+                    HUD_Season5V1 = true;
                     break;
             }
 
@@ -872,6 +907,7 @@ namespace TDUSCSpeedometerGTAV
             // Release HUD
             BackgroundTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict_Release, BackgroundTextureName_Release);
             BackgroundTextureImage2_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict2_Release, BackgroundTextureName2_Release);
+            BackgroundTextureImage_Season5V1 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict_Release, BackgroundTextureName_Season5V1);
 
             ImageKMH_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMHDict_Release, ImageKMHName_Release);
             ImageKMH_DNKNOR_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_DNKNORDict_Release, ImageKMH_DNKNORName_Release);
@@ -895,6 +931,7 @@ namespace TDUSCSpeedometerGTAV
             speedTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), SpeedTextureDict_Release, "speed_0000");
 
             RevTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevTextureDict_Release, "rev_0000");
+            RevTextureImage_Season5V1 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevTextureDict_Season5V1, "rev_0000");
 
             LabelRPMDeafult_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPMDefaultName_Release);
             LabelRPM_2000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_2000_Name);
@@ -949,12 +986,20 @@ namespace TDUSCSpeedometerGTAV
             LabelRPM_19000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_19000_Name);
 
             ABSTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ABSTextureImageDict_Release, ABSTextureImageName_Release);
+            ABSTextureImage_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ABSTextureImageDict_Release, ABSTextureImageName_Season5);
 
             TCSTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TCSTextureImageDict_Release, TCSTextureImageName_Release);
+            TCSTextureImage_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TCSTextureImageDict_Release, TCSTextureImageName_Season5);
 
             RevEngineOffImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevEngineOffImageDict_Release, RevEngineOffImageName_Release);
 
+            HeadlightHUD_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HeadlightHUD_Dict_Season5, HeadlightHUD_Name_Season5);
         }
+        private bool categorySpeedoEnabled;
+
+        private string categoryName;
+
+
         private void OnTick(object sender, EventArgs e)
         {
 
@@ -962,6 +1007,126 @@ namespace TDUSCSpeedometerGTAV
             _menuPool.ProcessMenus();
             TDUSC_HUDDemoTick();
             VehicleSlowMotionFranklin();
+
+            string enabledtext1, enabledtext2, enabledtext3, enabledtext4;
+
+
+            if (isMainHUDModEnabled)
+            {
+                enabledtext1 = "True";
+            }
+            else
+            {
+                enabledtext1 = "False";
+            }
+
+            // Speedometer Base
+            Ped playerPed = Game.Player.Character;
+            Player player = Game.Player;
+            if (categorySpeedoEnabled && playerPed != null && playerPed.IsInVehicle())
+            {
+                enabledtext2 = "True";
+            }
+            else
+            {
+                enabledtext2 = "False";
+            }
+
+            if (statusHUD)
+            {
+                enabledtext3 = "True";
+            }
+            else
+            {
+                enabledtext3 = "False";
+            }
+
+            if (isHideHUDForOpenPhoneorCharacterWheel)
+            {
+                enabledtext4 = "True";
+            }
+            else
+            {
+                enabledtext4 = "False";
+            }
+            
+            // GTA.UI.Screen.ShowSubtitle("isMainHUDModEnabled = " + enabledtext1 + "\n" + " categorySpeedoEnabled = " + enabledtext2 + "\n" + " statusHUD = " + enabledtext3 + "\n" + " isHideHUDForOpenPhoneorCharacterWheel = " + enabledtext4);
+
+            switch (categoryName)
+            {
+                case "Compacts":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Sedans":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "SUV":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Coupes":
+                    categorySpeedoEnabled = false;
+                    statusHUD = false;
+                    break;
+                case "Muscle":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "SportsClassics":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Sports":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Super":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Motorcycles":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "OffRoad":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Industrial":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Utility":
+                    categorySpeedoEnabled = false;
+                    statusHUD = false;
+                    break;
+                case "Vans":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Cycles":
+                    categorySpeedoEnabled = false;
+                    statusHUD = false;
+                    break;
+                case "Boats":
+                    categorySpeedoEnabled = false;
+                    statusHUD = false;
+                    break;
+                case "Helicopters":
+                    categorySpeedoEnabled = false;
+                    statusHUD = false;
+                    break;
+                case "Planes":
+                    categorySpeedoEnabled = false;
+                    statusHUD = false;
+                    break;
+                case "Service":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Emergency":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Military":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "Commercial":
+                    categorySpeedoEnabled = true;
+                    break;
+                case "OpenWheel":
+                    categorySpeedoEnabled = true;
+                    break;
+            }
         }
         private void OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -970,6 +1135,15 @@ namespace TDUSCSpeedometerGTAV
                 _mainMenu.Visible = !_mainMenu.Visible;
             }
         }
+        // TDU Solar Crown Speedometer
+        private bool isMainHUDModEnabled;
+        private bool isHideHUDForOpenPhoneorCharacterWheel;
+        private bool isRevEngineCurrent;
+        private bool isABSHUD;
+        private bool isTCSHUD;
+        private bool statusHUD;
+
+        private bool headlightsSeason5;
         private void TDUSC_HUDDemoTick()
         {
             if (!isMainHUDModEnabled)
@@ -979,1836 +1153,2250 @@ namespace TDUSCSpeedometerGTAV
             else
             {
                 // Speedometer Base
-
                 Ped playerPed = Game.Player.Character;
                 Player player = Game.Player;
-                if (isSpeedometerBackgroundDemo && playerPed != null && playerPed.IsInVehicle())
+                
+                if (statusHUD && playerPed != null && playerPed.IsInVehicle())
                 {
-                    // Get the player's current vehicle
-                    Vehicle currentVehicle = Game.Player.Character.CurrentVehicle;
 
 
-
-
-
-                    /*
-                    string modelName = ((VehicleHash)currentVehicle.Model.Hash).ToString();
-                    GTA.UI.Screen.ShowSubtitle($"~g~IN Car :~b~ {modelName} ", 10);
-                    */
-
-
-                    //Vehicle currentVehicle = playerPed.CurrentVehicle;
-
-                    // 1. ดึงชื่อ Spawn Name แท้ๆ (ตัวพิมพ์เล็ก) ที่เราใช้เสกรถ (เช่น "comet2", "one") จากคลาส Model โดยตรง
-                    string modelName = currentVehicle.Model.ToString().Replace(" ", "").ToLower();
-
-                    // 2. ดักทางเผื่อเหนียว: หาก SHVDN3 ดึงไม่ออกแล้วพ่นเลขฐานสิบหก 0x ออกมาแทน ให้สลับไปใช้ Native API
-                    if (modelName.StartsWith("0x"))
+                    Vehicle vehicleHeadLight = playerPed.CurrentVehicle;
+                    // Turn on headlights automatically if desired
+                    if (vehicleHeadLight.AreLightsOn)
                     {
-                        modelName = Function.Call<string>((Hash)0xB215AAC32D25D019, currentVehicle.Model.Hash).Replace(" ", "").ToLower();
-                    }
-
-                    // 3. ค้นหาใน Dictionary เพื่อดึงคลาส CarData ออกมา
-                    if (carNamesDict.TryGetValue(modelName, out CarData car))
-                    {
-                        SetRPM = car.DisplayMaxRPM;
+                        headlightsSeason5 = true;
                     }
                     else
                     {
-                        SetRPM = 9000;
+                        headlightsSeason5 = false;
                     }
 
-                    int add50 = 50;
-
-                    // Set Display REV RPM
-                    // Max 3k
-                    if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
+                    if (isHideHUDForOpenPhoneorCharacterWheel)
                     {
-                        // 1202
-                        rpmMin = 604;
-                        int rpmMaxDefault = 1202;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                    {
-                        // 1323
-                        rpmMin = 604;
-                        int rpmMaxDefault = 1323;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                    {
-                        // 1447
-                        rpmMin = 604;
-                        int rpmMaxDefault = 1447;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                    {
-                        // 1566
-                        rpmMin = 604;
-                        int rpmMaxDefault = 604;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                    {
-                        // 1688
-                        rpmMin = 604;
-                        int rpmMaxDefault = 1688;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 4k
-                    else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                    {
-                        // 1351
-                        rpmMin = 453;
-                        int rpmMaxDefault = 1351;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 6k
-                    else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                    {
-                        // 1201
-                        rpmMin = 304;
-                        int rpmMaxDefault = 1201;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                    {
-                        // 1358
-                        rpmMin = 304;
-                        int rpmMaxDefault = 1358;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                    {
-                        // 1499
-                        rpmMin = 304;
-                        int rpmMaxDefault = 1499;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                    {
-                        // 1567
-                        rpmMin = 304;
-                        int rpmMaxDefault = 1567;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                    {
-                        // 1626
-                        rpmMin = 304;
-                        int rpmMaxDefault = 1626;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 7k
-                    else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                    {
-                        // 1448
-                        rpmMin = 264;
-                        int rpmMaxDefault = 1448;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                    {
-                        // 1498
-                        rpmMin = 264;
-                        int rpmMaxDefault = 1498;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                    {
-                        // 1547
-                        rpmMin = 264;
-                        int rpmMaxDefault = 1547;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                    {
-                        // 1596
-                        rpmMin = 264;
-                        int rpmMaxDefault = 1596;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 8k
-                    else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                    {
-                        // 1448
-                        rpmMin = 230;
-                        int rpmMaxDefault = 1448;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                    {
-                        // 1495
-                        rpmMin = 230;
-                        int rpmMaxDefault = 1495;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                    {
-                        // 1536
-                        rpmMin = 230;
-                        int rpmMaxDefault = 1536;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                    {
-                        // 1579
-                        rpmMin = 230;
-                        int rpmMaxDefault = 1579;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                    {
-                        // 1625
-                        rpmMin = 230;
-                        int rpmMaxDefault = 1625;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 9k
-                    else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                    {
-                        // 1485
-                        rpmMin = 207;
-                        int rpmMaxDefault = 1485;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                    {
-                        // 1524
-                        rpmMin = 207;
-                        int rpmMaxDefault = 1524;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                    {
-                        // 1566
-                        rpmMin = 207;
-                        int rpmMaxDefault = 1566;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                    {
-                        // 1620
-                        rpmMin = 207;
-                        int rpmMaxDefault = 1620;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 10k
-                    else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                    {
-                        // 1483
-                        rpmMin = 185;
-                        int rpmMaxDefault = 1483;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                    {
-                        // 1516
-                        rpmMin = 185;
-                        int rpmMaxDefault = 1516;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                    {
-                        // 1555
-                        rpmMin = 185;
-                        int rpmMaxDefault = 1555;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                    {
-                        // 1591
-                        rpmMin = 185;
-                        int rpmMaxDefault = 1591;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                    {
-                        // 1629
-                        rpmMin = 185;
-                        int rpmMaxDefault = 1629;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 11k
-                    else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                    {
-                        // 1512
-                        rpmMin = 170;
-                        int rpmMaxDefault = 1512;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                    {
-                        // 1544
-                        rpmMin = 170;
-                        int rpmMaxDefault = 1544;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                    {
-                        // 1578
-                        rpmMin = 170;
-                        int rpmMaxDefault = 1578;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                    {
-                        // 1612
-                        rpmMin = 170;
-                        int rpmMaxDefault = 1612;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 12k
-                    else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                    {
-                        // 1503
-                        rpmMin = 153;
-                        int rpmMaxDefault = 1503;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                    {
-                        // 1581
-                        rpmMin = 153;
-                        int rpmMaxDefault = 1581;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                    {
-                        // 1651
-                        rpmMin = 153;
-                        int rpmMaxDefault = 1651;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 14k
-                    else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                    {
-                        // 1486
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1486;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                    {
-                        // 1548
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1548;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                    {
-                        // 1612
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1612;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 16k
-                    else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                    {
-                        // 1466
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1466;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                    {
-                        // 1522
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1522;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                    {
-                        // 1581
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1581;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                    {
-                        // 1637
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1637;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 18k
-                    else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                    {
-                        // 1498
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1498;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                    {
-                        // 1555
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1555;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                    {
-                        // 1602
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1602;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    // Max 20k
-                    else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                    {
-                        // 1487
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1487;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                    {
-                        // 1535
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1535;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                    {
-                        // 1613
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1613;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-                    else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                    {
-                        // 1717
-                        rpmMin = 0;
-                        int rpmMaxDefault = 1717;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if(currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-
-                    }
-                    else
-                    {
-                        // 1629
-                        rpmMin = 185;
-                        int rpmMaxDefault = 1629;
-                        rpmMax = rpmMaxDefault + add50;
-
-                        if (currentRPM >= rpmMaxDefault)
-                        {
-                            gearhudcolour_default = false;
-                            gearhudcolour_red = true;
-                        }
-                        else
-                        {
-                            gearhudcolour_default = true;
-                            gearhudcolour_red = false;
-                        }
-                    }
-
-                 //   GTA.UI.Screen.ShowSubtitle($"{currentRPM}");
-                    // Ensure the player is actually in a vehicle
-                    if (currentVehicle != null && currentVehicle.Exists())
-                    {
+                        Vehicle currentVehicle = Game.Player.Character.CurrentVehicle;
                         // 2. ดึงประเภทของรถ (Vehicle Class) และแปลงเป็นภาษาไทย
                         VehicleClass vehicleClass = currentVehicle.ClassType;
                         string category = GetVehicleClassName(vehicleClass);
 
+                        categoryName = category;
 
                         // 3. ดึงชื่อรุ่นรถ (รองรับทั้งรถเดิมและรถ Add-on)
                         string displayName = currentVehicle.LocalizedName;
                         if (string.IsNullOrEmpty(displayName) || displayName == "NULL")
                         {
-                            displayName = currentVehicle.Model.ToString(); // ใช้ชื่อโมเดลเสกถ้าระบบหาชื่อแปลไม่เจอ
+                            displayName = currentVehicle.Model.ToString(); // ใช้ชื่อโมเดลเสกถ้าระบบหาชื่อแปลไม่เจอ 
                         }
 
-                        if (HUD_Demo)
+                        // 1. ดึงชื่อ Spawn Name แท้ๆ (ตัวพิมพ์เล็ก) ที่เราใช้เสกรถ (เช่น "comet2", "one") จากคลาส Model โดยตรง
+                        string modelName = currentVehicle.Model.ToString().Replace(" ", "").ToLower();
+
+                        // 2. ดักทางเผื่อเหนียว: หาก SHVDN3 ดึงไม่ออกแล้วพ่นเลขฐานสิบหก 0x ออกมาแทน ให้สลับไปใช้ Native API
+                        if (modelName.StartsWith("0x"))
                         {
-                            // Outline
-                            BackgroundTextureImage2.Draw();
-                            BackgroundTextureImage.Draw();
+                            modelName = Function.Call<string>(Hash.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL, currentVehicle.Model.Hash).Replace(" ", "").ToLower();
+                        }
 
-                            if (isKMH)
-                            {
+                        // 3. ค้นหาใน Dictionary เพื่อดึงคลาส CarData ออกมา
+                        if (carNamesDict.TryGetValue(modelName, out CarData car))
+                        {
+                            SetRPM = car.DisplayMaxRPM;
+                        }
+                        else
+                        {
+                            SetRPM = 9000;
+                        }
 
-                                switch (isUnitsLanguage)
-                                {
+                        int add50 = 50;
 
-                                    case 0:
-                                        ImageKMH.Draw();
-                                        break;
-                                    case 1:
-                                        ImageKMH_DNKNOR.Draw();
-                                        break;
-                                    case 2:
-                                        ImageKMH_NLD.Draw();
-                                        break;
-                                    case 3:
-                                        ImageKMH_RUS.Draw();
-                                        break;
-                                    case 4:
-                                        ImageKMH_TUR.Draw();
-                                        break;
-                                    case 5:
-                                        ImageKMH_UKR.Draw();
-                                        break;
-                                    case 6:
-                                        ImageKMH_VNM.Draw();
-                                        break;
-                                }
-                            }
+                        // Set Display REV RPM
+                        // Max 3k
+                        if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
+                        {
+                            // 1202
+                            rpmMin = 604;
+                            int rpmMaxDefault = 1202;
+                            rpmMax = rpmMaxDefault + add50;
 
-                            if (isMPH)
+                            if (currentRPM >= rpmMaxDefault)
                             {
-                                switch (isUnitsLanguage)
-                                {
-                                    case 0:
-                                        ImageMPH.Draw();
-                                        break;
-                                    case 1:
-                                        ImageMPH.Draw();
-                                        break;
-                                    case 2:
-                                        ImageMPH_NLD.Draw();
-                                        break;
-                                    case 3:
-                                        ImageMPH_RUS.Draw();
-                                        break;
-                                    case 4:
-                                        ImageMPH_TUR.Draw();
-                                        break;
-                                    case 5:
-                                        ImageMPH_UKR.Draw();
-                                        break;
-                                    case 6:
-                                        ImageMPH_VNM.Draw();
-                                        break;
-                                }
-                            }
-
-
-                            speedTextureImage.Draw();
-
-
-                            if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
-                            {
-                                LabelRPM_2000.Draw();
-                            }
-                            else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                            {
-                                LabelRPM_2200.Draw();
-                            }
-                            else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                            {
-                                LabelRPM_2400.Draw();
-                            }
-                            else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                            {
-                                LabelRPM_2600.Draw();
-                            }
-                            else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                            {
-                                LabelRPM_2800.Draw();
-                            }
-                            else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                            {
-                                LabelRPM_3000.Draw();
-                            }
-                            else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                            {
-                                LabelRPM_4000.Draw();
-                            }
-                            else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                            {
-                                LabelRPM_4500.Draw();
-                            }
-                            else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                            {
-                                LabelRPM_5000.Draw();
-                            }
-                            else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                            {
-                                LabelRPM_5200.Draw();
-                            }
-                            else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                            {
-                                LabelRPM_5400.Draw();
-                            }
-                            else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                            {
-                                LabelRPM_5600.Draw();
-                            }
-                            else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                            {
-                                LabelRPM_5800.Draw();
-                            }
-                            else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                            {
-                                LabelRPM_6000.Draw();
-                            }
-                            else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                            {
-                                LabelRPM_6200.Draw();
-                            }
-                            else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                            {
-                                LabelRPM_6400.Draw();
-                            }
-                            else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                            {
-                                LabelRPM_6600.Draw();
-                            }
-                            else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                            {
-                                LabelRPM_6800.Draw();
-                            }
-                            else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                            {
-                                LabelRPM_7000.Draw();
-                            }
-                            else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                            {
-                                LabelRPM_7200.Draw();
-                            }
-                            else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                            {
-                                LabelRPM_7400.Draw();
-                            }
-                            else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                            {
-                                LabelRPM_7600.Draw();
-                            }
-                            else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                            {
-                                LabelRPM_7800.Draw();
-                            }
-                            else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                            {
-                                LabelRPM_8000.Draw();
-                            }
-                            else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                            {
-                                LabelRPM_8200.Draw();
-                            }
-                            else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                            {
-                                LabelRPM_8400.Draw();
-                            }
-                            else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                            {
-                                LabelRPM_8600.Draw();
-                            }
-                            else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                            {
-                                LabelRPM_8800.Draw();
-                            }
-                            else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                            {
-                                LabelRPM_9000.Draw();
-                            }
-                            else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                            {
-                                LabelRPM_9200.Draw();
-                            }
-                            else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                            {
-                                LabelRPM_9400.Draw();
-                            }
-                            else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                            {
-                                LabelRPM_9600.Draw();
-                            }
-                            else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                            {
-                                LabelRPM_9800.Draw();
-                            }
-                            else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                            {
-                                LabelRPM_10000.Draw();
-                            }
-                            else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                            {
-                                LabelRPM_10500.Draw();
-                            }
-                            else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                            {
-                                LabelRPM_11000.Draw();
-                            }
-                            else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                            {
-                                LabelRPM_11500.Draw();
-                            }
-                            else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                            {
-                                LabelRPM_12000.Draw();
-                            }
-                            else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                            {
-                                LabelRPM_12500.Draw();
-                            }
-                            else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                            {
-                                LabelRPM_13000.Draw();
-                            }
-                            else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                            {
-                                LabelRPM_13500.Draw();
-                            }
-                            else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                            {
-                                LabelRPM_14000.Draw();
-                            }
-                            else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                            {
-                                LabelRPM_14500.Draw();
-                            }
-                            else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                            {
-                                LabelRPM_15000.Draw();
-                            }
-                            else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                            {
-                                LabelRPM_15500.Draw();
-                            }
-                            else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                            {
-                                LabelRPM_16000.Draw();
-                            }
-                            else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                            {
-                                LabelRPM_16500.Draw();
-                            }
-                            else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                            {
-                                LabelRPM_17000.Draw();
-                            }
-                            else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                            {
-                                LabelRPM_18000.Draw();
-                            }
-                            else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                            {
-                                LabelRPM_19000.Draw();
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
                             }
                             else
                             {
-                                LabelRPMDeafult.Draw();
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
+                        {
+                            // 1323
+                            rpmMin = 604;
+                            int rpmMaxDefault = 1323;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
+                        {
+                            // 1447
+                            rpmMin = 604;
+                            int rpmMaxDefault = 1447;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
+                        {
+                            // 1566
+                            rpmMin = 604;
+                            int rpmMaxDefault = 604;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
+                        {
+                            // 1688
+                            rpmMin = 604;
+                            int rpmMaxDefault = 1688;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 4k
+                        else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
+                        {
+                            // 1351
+                            rpmMin = 453;
+                            int rpmMaxDefault = 1351;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 6k
+                        else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
+                        {
+                            // 1201
+                            rpmMin = 304;
+                            int rpmMaxDefault = 1201;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
+                        {
+                            // 1358
+                            rpmMin = 304;
+                            int rpmMaxDefault = 1358;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
+                        {
+                            // 1499
+                            rpmMin = 304;
+                            int rpmMaxDefault = 1499;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
+                        {
+                            // 1567
+                            rpmMin = 304;
+                            int rpmMaxDefault = 1567;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
+                        {
+                            // 1626
+                            rpmMin = 304;
+                            int rpmMaxDefault = 1626;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 7k
+                        else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
+                        {
+                            // 1448
+                            rpmMin = 264;
+                            int rpmMaxDefault = 1448;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
+                        {
+                            // 1498
+                            rpmMin = 264;
+                            int rpmMaxDefault = 1498;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
+                        {
+                            // 1547
+                            rpmMin = 264;
+                            int rpmMaxDefault = 1547;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
+                        {
+                            // 1596
+                            rpmMin = 264;
+                            int rpmMaxDefault = 1596;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 8k
+                        else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
+                        {
+                            // 1448
+                            rpmMin = 230;
+                            int rpmMaxDefault = 1448;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
+                        {
+                            // 1495
+                            rpmMin = 230;
+                            int rpmMaxDefault = 1495;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
+                        {
+                            // 1536
+                            rpmMin = 230;
+                            int rpmMaxDefault = 1536;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
+                        {
+                            // 1579
+                            rpmMin = 230;
+                            int rpmMaxDefault = 1579;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
+                        {
+                            // 1625
+                            rpmMin = 230;
+                            int rpmMaxDefault = 1625;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 9k
+                        else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
+                        {
+                            // 1485
+                            rpmMin = 207;
+                            int rpmMaxDefault = 1485;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
+                        {
+                            // 1524
+                            rpmMin = 207;
+                            int rpmMaxDefault = 1524;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
+                        {
+                            // 1566
+                            rpmMin = 207;
+                            int rpmMaxDefault = 1566;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
+                        {
+                            // 1620
+                            rpmMin = 207;
+                            int rpmMaxDefault = 1620;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 10k
+                        else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
+                        {
+                            // 1483
+                            rpmMin = 185;
+                            int rpmMaxDefault = 1483;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
+                        {
+                            // 1516
+                            rpmMin = 185;
+                            int rpmMaxDefault = 1516;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
+                        {
+                            // 1555
+                            rpmMin = 185;
+                            int rpmMaxDefault = 1555;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
+                        {
+                            // 1591
+                            rpmMin = 185;
+                            int rpmMaxDefault = 1591;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
+                        {
+                            // 1629
+                            rpmMin = 185;
+                            int rpmMaxDefault = 1629;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 11k
+                        else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
+                        {
+                            // 1512
+                            rpmMin = 170;
+                            int rpmMaxDefault = 1512;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
+                        {
+                            // 1544
+                            rpmMin = 170;
+                            int rpmMaxDefault = 1544;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
+                        {
+                            // 1578
+                            rpmMin = 170;
+                            int rpmMaxDefault = 1578;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
+                        {
+                            // 1612
+                            rpmMin = 170;
+                            int rpmMaxDefault = 1612;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 12k
+                        else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
+                        {
+                            // 1503
+                            rpmMin = 153;
+                            int rpmMaxDefault = 1503;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
+                        {
+                            // 1581
+                            rpmMin = 153;
+                            int rpmMaxDefault = 1581;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
+                        {
+                            // 1651
+                            rpmMin = 153;
+                            int rpmMaxDefault = 1651;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 14k
+                        else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
+                        {
+                            // 1486
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1486;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
+                        {
+                            // 1548
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1548;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
+                        {
+                            // 1612
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1612;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 16k
+                        else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
+                        {
+                            // 1466
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1466;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
+                        {
+                            // 1522
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1522;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
+                        {
+                            // 1581
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1581;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
+                        {
+                            // 1637
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1637;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 18k
+                        else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
+                        {
+                            // 1498
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1498;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
+                        {
+                            // 1555
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1555;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
+                        {
+                            // 1602
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1602;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        // Max 20k
+                        else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
+                        {
+                            // 1487
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1487;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
+                        {
+                            // 1535
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1535;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
+                        {
+                            // 1613
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1613;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+                        else if (SetRPM >= rpm_19000 && SetRPM < 20000)
+                        {
+                            // 1717
+                            rpmMin = 0;
+                            int rpmMaxDefault = 1717;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
+                            {
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
                             }
 
-                            if (gearhudcolour_default)
+                        }
+                        else
+                        {
+                            // 1629
+                            rpmMin = 185;
+                            int rpmMaxDefault = 1629;
+                            rpmMax = rpmMaxDefault + add50;
+
+                            if (currentRPM >= rpmMaxDefault)
                             {
-                                if (gearTexture != null)
+                                gearhudcolour_default = false;
+                                gearhudcolour_red = true;
+                            }
+                            else
+                            {
+                                gearhudcolour_default = true;
+                                gearhudcolour_red = false;
+                            }
+                        }
+
+                        //   GTA.UI.Screen.ShowSubtitle($"{currentRPM}");
+                        // Ensure the player is actually in a vehicle
+                        if (currentVehicle != null && currentVehicle.Exists())
+                        {
+
+                            if (HUD_Demo)
+                            {
+                                // Outline
+                                BackgroundTextureImage2.Draw();
+                                BackgroundTextureImage.Draw();
+
+                                if (isKMH)
                                 {
-                                    gearTexture.Draw();
+
+                                    switch (isUnitsLanguage)
+                                    {
+
+                                        case 0:
+                                            ImageKMH.Draw();
+                                            break;
+                                        case 1:
+                                            ImageKMH_DNKNOR.Draw();
+                                            break;
+                                        case 2:
+                                            ImageKMH_NLD.Draw();
+                                            break;
+                                        case 3:
+                                            ImageKMH_RUS.Draw();
+                                            break;
+                                        case 4:
+                                            ImageKMH_TUR.Draw();
+                                            break;
+                                        case 5:
+                                            ImageKMH_UKR.Draw();
+                                            break;
+                                        case 6:
+                                            ImageKMH_VNM.Draw();
+                                            break;
+                                    }
                                 }
-                            }
-                            if (gearhudcolour_red)
-                            {
-                                if (gearTexture_Red != null)
+
+                                if (isMPH)
                                 {
-                                    gearTexture_Red.Draw();
+                                    switch (isUnitsLanguage)
+                                    {
+                                        case 0:
+                                            ImageMPH.Draw();
+                                            break;
+                                        case 1:
+                                            ImageMPH.Draw();
+                                            break;
+                                        case 2:
+                                            ImageMPH_NLD.Draw();
+                                            break;
+                                        case 3:
+                                            ImageMPH_RUS.Draw();
+                                            break;
+                                        case 4:
+                                            ImageMPH_TUR.Draw();
+                                            break;
+                                        case 5:
+                                            ImageMPH_UKR.Draw();
+                                            break;
+                                        case 6:
+                                            ImageMPH_VNM.Draw();
+                                            break;
+                                    }
                                 }
-                            }
-                            // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                            if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
-                            {
-                                HandbrakeTextureImage.Draw();
-                            }
-
-                            Vehicle veh = playerPed.CurrentVehicle;
-
-                            /* Speed Text */
-
-                            // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
-                            // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
-                            float speedKmh = veh.Speed * isSwitchUnits;
-
-                            // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
-                            if (speedKmh > 1000f) speedKmh = 1000f;
-                            if (speedKmh < 0f) speedKmh = 0f;
-
-                            // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
-                            int speedInt = (int)Math.Round(speedKmh);
-                            string textureName = SpeedBaseTextureName + speedInt.ToString("D4");
-
-                            // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
-                            speedTextureImage.Texture = textureName;
 
 
-                            if (isRevEngineCurrent)
-                            {
-                                /* RPM */
+                                speedTextureImage.Draw();
 
-                                // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
-                                float targetRpm = veh.CurrentRPM;
 
-                                // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
-                                smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
-
-                                // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
-                                // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
-                                string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
-
-                                RevTextureImage.Texture = RPMtextureName;
-                                RevTextureImage.Draw();
-                            }
-
-                            if (isABSHUD)
-                            {
-                                ABSTextureImage.Draw();
-                            }
-                            if (isTCSHUD)
-                            {
-                                TCSTextureImage.Draw();
-                            }
-
-                            Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
-                            // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
-                            if (playerVeh != null && playerVeh.Exists())
-                            {
-                                isEngineOn = playerVeh.IsEngineRunning;
-
-                                // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
-                                if (isEngineOn)
+                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
                                 {
-                                    // Engine On
-                                    isRevEngineCurrent = true;
+                                    LabelRPM_2000.Draw();
+                                }
+                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
+                                {
+                                    LabelRPM_2200.Draw();
+                                }
+                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
+                                {
+                                    LabelRPM_2400.Draw();
+                                }
+                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
+                                {
+                                    LabelRPM_2600.Draw();
+                                }
+                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
+                                {
+                                    LabelRPM_2800.Draw();
+                                }
+                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
+                                {
+                                    LabelRPM_3000.Draw();
+                                }
+                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
+                                {
+                                    LabelRPM_4000.Draw();
+                                }
+                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
+                                {
+                                    LabelRPM_4500.Draw();
+                                }
+                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
+                                {
+                                    LabelRPM_5000.Draw();
+                                }
+                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
+                                {
+                                    LabelRPM_5200.Draw();
+                                }
+                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
+                                {
+                                    LabelRPM_5400.Draw();
+                                }
+                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
+                                {
+                                    LabelRPM_5600.Draw();
+                                }
+                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
+                                {
+                                    LabelRPM_5800.Draw();
+                                }
+                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
+                                {
+                                    LabelRPM_6000.Draw();
+                                }
+                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
+                                {
+                                    LabelRPM_6200.Draw();
+                                }
+                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
+                                {
+                                    LabelRPM_6400.Draw();
+                                }
+                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
+                                {
+                                    LabelRPM_6600.Draw();
+                                }
+                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
+                                {
+                                    LabelRPM_6800.Draw();
+                                }
+                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
+                                {
+                                    LabelRPM_7000.Draw();
+                                }
+                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
+                                {
+                                    LabelRPM_7200.Draw();
+                                }
+                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
+                                {
+                                    LabelRPM_7400.Draw();
+                                }
+                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
+                                {
+                                    LabelRPM_7600.Draw();
+                                }
+                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
+                                {
+                                    LabelRPM_7800.Draw();
+                                }
+                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
+                                {
+                                    LabelRPM_8000.Draw();
+                                }
+                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
+                                {
+                                    LabelRPM_8200.Draw();
+                                }
+                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
+                                {
+                                    LabelRPM_8400.Draw();
+                                }
+                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
+                                {
+                                    LabelRPM_8600.Draw();
+                                }
+                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
+                                {
+                                    LabelRPM_8800.Draw();
+                                }
+                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
+                                {
+                                    LabelRPM_9000.Draw();
+                                }
+                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
+                                {
+                                    LabelRPM_9200.Draw();
+                                }
+                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
+                                {
+                                    LabelRPM_9400.Draw();
+                                }
+                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
+                                {
+                                    LabelRPM_9600.Draw();
+                                }
+                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
+                                {
+                                    LabelRPM_9800.Draw();
+                                }
+                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
+                                {
+                                    LabelRPM_10000.Draw();
+                                }
+                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
+                                {
+                                    LabelRPM_10500.Draw();
+                                }
+                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
+                                {
+                                    LabelRPM_11000.Draw();
+                                }
+                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
+                                {
+                                    LabelRPM_11500.Draw();
+                                }
+                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
+                                {
+                                    LabelRPM_12000.Draw();
+                                }
+                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
+                                {
+                                    LabelRPM_12500.Draw();
+                                }
+                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
+                                {
+                                    LabelRPM_13000.Draw();
+                                }
+                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
+                                {
+                                    LabelRPM_13500.Draw();
+                                }
+                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
+                                {
+                                    LabelRPM_14000.Draw();
+                                }
+                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
+                                {
+                                    LabelRPM_14500.Draw();
+                                }
+                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
+                                {
+                                    LabelRPM_15000.Draw();
+                                }
+                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
+                                {
+                                    LabelRPM_15500.Draw();
+                                }
+                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
+                                {
+                                    LabelRPM_16000.Draw();
+                                }
+                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
+                                {
+                                    LabelRPM_16500.Draw();
+                                }
+                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
+                                {
+                                    LabelRPM_17000.Draw();
+                                }
+                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
+                                {
+                                    LabelRPM_18000.Draw();
+                                }
+                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
+                                {
+                                    LabelRPM_19000.Draw();
                                 }
                                 else
                                 {
-                                    // Engine Off
-                                    RevEngineOffImage.Draw();
-                                    isRevEngineCurrent = false;
-                                }
-                            }
-
-                            DriftHUD();
-
-                            // Check if the player is alive and inside a vehicle
-                            if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
-                            {
-                                Vehicle veh2 = playerPed.CurrentVehicle;
-                                int currentGear = veh2.CurrentGear;
-                                bool isNeutral = false;
-
-                                // ลอจิกจำลองเกียร์ว่าง (Neutral) 
-                                // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
-                                if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
-                                {
-                                    isNeutral = true;
+                                    LabelRPMDeafult.Draw();
                                 }
 
-                                // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
-                                if (currentGear != lastGear || isNeutral != wasNeutral)
+                                if (gearhudcolour_default)
                                 {
-                                    string textureNameGear = GetGearTextureName(currentGear, isNeutral);
-
-                                    // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
-                                    // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
-                                    gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict, textureNameGear);
-                                    gearTexture.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
-
-                                    gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict, textureNameGear);
-                                    gearTexture_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
-
-                                    lastGear = currentGear;
-                                    wasNeutral = isNeutral;
+                                    if (gearTexture != null)
+                                    {
+                                        gearTexture.Draw();
+                                    }
                                 }
-                            }
-                            else
-                            {
-                                // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
-                                smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
-
-                                // รีเซ็ตสถานะเมื่อลงจากรถ
-                                lastGear = -1;
-                                wasNeutral = false;
-                                gearTexture = null;
-                                gearTexture_Red = null;
-                            }
-                        }
-
-                        // Release HUD
-                        if (HUD_Release)
-                        {
-                            // Outline
-                            BackgroundTextureImage2_Release.Draw();
-                            BackgroundTextureImage_Release.Draw();
-
-                            if (isKMH)
-                            {
-
-                                switch (isUnitsLanguage)
+                                if (gearhudcolour_red)
                                 {
-
-                                    case 0:
-                                        ImageKMH_Release.Draw();
-                                        break;
-                                    case 1:
-                                        ImageKMH_DNKNOR_Release.Draw();
-                                        break;
-                                    case 2:
-                                        ImageKMH_NLD_Release.Draw();
-                                        break;
-                                    case 3:
-                                        ImageKMH_RUS_Release.Draw();
-                                        break;
-                                    case 4:
-                                        ImageKMH_TUR_Release.Draw();
-                                        break;
-                                    case 5:
-                                        ImageKMH_UKR_Release.Draw();
-                                        break;
-                                    case 6:
-                                        ImageKMH_VNM_Release.Draw();
-                                        break;
+                                    if (gearTexture_Red != null)
+                                    {
+                                        gearTexture_Red.Draw();
+                                    }
                                 }
-                            }
-
-                            if (isMPH)
-                            {
-                                switch (isUnitsLanguage)
+                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
                                 {
-                                    case 0:
-                                        ImageMPH_Release.Draw();
-                                        break;
-                                    case 1:
-                                        ImageMPH_Release.Draw();
-                                        break;
-                                    case 2:
-                                        ImageMPH_NLD_Release.Draw();
-                                        break;
-                                    case 3:
-                                        ImageMPH_RUS_Release.Draw();
-                                        break;
-                                    case 4:
-                                        ImageMPH_TUR_Release.Draw();
-                                        break;
-                                    case 5:
-                                        ImageMPH_UKR_Release.Draw();
-                                        break;
-                                    case 6:
-                                        ImageMPH_VNM_Release.Draw();
-                                        break;
+                                    HandbrakeTextureImage.Draw();
                                 }
-                            }
+
+                                Vehicle veh = playerPed.CurrentVehicle;
+
+                                /* Speed Text */
+
+                                // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
+                                // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
+                                float speedKmh = veh.Speed * isSwitchUnits;
+
+                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
+                                if (speedKmh > 1000f) speedKmh = 1000f;
+                                if (speedKmh < 0f) speedKmh = 0f;
+
+                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
+                                int speedInt = (int)Math.Round(speedKmh);
+                                string textureName = SpeedBaseTextureName + speedInt.ToString("D4");
+
+                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
+                                speedTextureImage.Texture = textureName;
 
 
-                            speedTextureImage_Release.Draw();
-
-                            
-
-                            if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
-                            {
-                                LabelRPM_2000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                            {
-                                LabelRPM_2200_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                            {
-                                LabelRPM_2400_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                            {
-                                LabelRPM_2600_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                            {
-                                LabelRPM_2800_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                            {
-                                LabelRPM_3000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                            {
-                                LabelRPM_4000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                            {
-                                LabelRPM_4500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                            {
-                                LabelRPM_5000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                            {
-                                LabelRPM_5200_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                            {
-                                LabelRPM_5400_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                            {
-                                LabelRPM_5600_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                            {
-                                LabelRPM_5800_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                            {
-                                LabelRPM_6000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                            {
-                                LabelRPM_6200_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                            {
-                                LabelRPM_6400_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                            {
-                                LabelRPM_6600_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                            {
-                                LabelRPM_6800_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                            {
-                                LabelRPM_7000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                            {
-                                LabelRPM_7200_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                            {
-                                LabelRPM_7400_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                            {
-                                LabelRPM_7600_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                            {
-                                LabelRPM_7800_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                            {
-                                LabelRPM_8000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                            {
-                                LabelRPM_8200_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                            {
-                                LabelRPM_8400_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                            {
-                                LabelRPM_8600_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                            {
-                                LabelRPM_8800_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                            {
-                                LabelRPM_9000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                            {
-                                LabelRPM_9200_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                            {
-                                LabelRPM_9400_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                            {
-                                LabelRPM_9600_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                            {
-                                LabelRPM_9800_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                            {
-                                LabelRPM_10000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                            {
-                                LabelRPM_10500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                            {
-                                LabelRPM_11000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                            {
-                                LabelRPM_11500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                            {
-                                LabelRPM_12000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                            {
-                                LabelRPM_12500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                            {
-                                LabelRPM_13000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                            {
-                                LabelRPM_13500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                            {
-                                LabelRPM_14000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                            {
-                                LabelRPM_14500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                            {
-                                LabelRPM_15000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                            {
-                                LabelRPM_15500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                            {
-                                LabelRPM_16000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                            {
-                                LabelRPM_16500_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                            {
-                                LabelRPM_17000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                            {
-                                LabelRPM_18000_Release.Draw();
-                            }
-                            else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                            {
-                                LabelRPM_19000_Release.Draw();
-                            }
-                            else
-                            {
-                                LabelRPMDeafult_Release.Draw();
-                            }
-                            if (gearhudcolour_default)
-                            {
-                                if (gearTexture_Release != null)
+                                if (isRevEngineCurrent)
                                 {
-                                    gearTexture_Release.Draw();
+                                    /* RPM */
+
+                                    // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
+                                    float targetRpm = veh.CurrentRPM;
+
+                                    // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
+                                    smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
+
+                                    // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
+                                    // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
+                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
+
+                                    RevTextureImage.Texture = RPMtextureName;
+                                    RevTextureImage.Draw();
                                 }
-                            }
-                            if (gearhudcolour_red)
-                            {
-                                if (gearTexture_Release != null)
+
+                                if (isABSHUD)
                                 {
-                                    gearTexture_Release_Red.Draw();
+                                    ABSTextureImage.Draw();
                                 }
-                            }
-                            
-                            // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                            if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
-                            {
-                                HandbrakeTextureImage_Release.Draw();
-                            }
-
-                            Vehicle veh = playerPed.CurrentVehicle;
-
-                            /* Speed Text */
-
-                            // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
-                            // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
-                            float speedKmh = veh.Speed * isSwitchUnits;
-
-                            // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
-                            if (speedKmh > 1000f) speedKmh = 1000f;
-                            if (speedKmh < 0f) speedKmh = 0f;
-
-                            // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
-                            int speedInt = (int)Math.Round(speedKmh);
-                            string textureName = SpeedBaseTextureName_Release + speedInt.ToString("D4");
-
-                            // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
-                            speedTextureImage_Release.Texture = textureName;
-
-                            if (isRevEngineCurrent)
-                            {
-                                /* RPM */
-
-                                // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
-                                float targetRpm = veh.CurrentRPM;
-
-                                // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
-                                smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
-
-                                // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
-                                // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
-                                string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
-
-                                RevTextureImage_Release.Texture = RPMtextureName;
-                                RevTextureImage_Release.Draw();
-                            }
-
-                            if (isABSHUD)
-                            {
-                                ABSTextureImage_Release.Draw();
-                            }
-                            if (isTCSHUD)
-                            {
-                                TCSTextureImage_Release.Draw();
-                            }
-
-                            Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
-                            // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
-                            if (playerVeh != null && playerVeh.Exists())
-                            {
-                                isEngineOn = playerVeh.IsEngineRunning;
-
-                                // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
-                                if (isEngineOn)
+                                if (isTCSHUD)
                                 {
-                                    // Engine On
-                                    isRevEngineCurrent = true;
+                                    TCSTextureImage.Draw();
+                                }
+
+                                Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
+                                // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
+                                if (playerVeh != null && playerVeh.Exists())
+                                {
+                                    isEngineOn = playerVeh.IsEngineRunning;
+
+                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
+                                    if (isEngineOn)
+                                    {
+                                        // Engine On
+                                        isRevEngineCurrent = true;
+                                    }
+                                    else
+                                    {
+                                        // Engine Off
+                                        RevEngineOffImage.Draw();
+                                        isRevEngineCurrent = false;
+                                    }
+                                }
+
+                                DriftHUD();
+
+                                // Check if the player is alive and inside a vehicle
+                                if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
+                                {
+                                    Vehicle veh2 = playerPed.CurrentVehicle;
+                                    int currentGear = veh2.CurrentGear;
+                                    bool isNeutral = false;
+
+                                    // ลอจิกจำลองเกียร์ว่าง (Neutral) 
+                                    // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
+                                    if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
+                                    {
+                                        isNeutral = true;
+                                    }
+
+                                    // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
+                                    if (currentGear != lastGear || isNeutral != wasNeutral)
+                                    {
+                                        string textureNameGear = GetGearTextureName(currentGear, isNeutral);
+
+                                        // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
+                                        // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
+                                        gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict, textureNameGear);
+                                        gearTexture.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
+
+                                        gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict, textureNameGear);
+                                        gearTexture_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
+
+                                        lastGear = currentGear;
+                                        wasNeutral = isNeutral;
+                                    }
                                 }
                                 else
                                 {
-                                    // Engine Off
-                                    RevEngineOffImage_Release.Draw();
-                                    isRevEngineCurrent = false;
+                                    // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
+                                    smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
+
+                                    // รีเซ็ตสถานะเมื่อลงจากรถ
+                                    lastGear = -1;
+                                    wasNeutral = false;
+                                    gearTexture = null;
+                                    gearTexture_Red = null;
                                 }
                             }
 
-                            // Check if the player is alive and inside a vehicle
-                            if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
+                            // Release HUD
+                            if (HUD_Release)
                             {
-                                Vehicle veh2 = playerPed.CurrentVehicle;
-                                int currentGear = veh2.CurrentGear;
-                                bool isNeutral = false;
+                                // Outline
+                                BackgroundTextureImage2_Release.Draw();
+                                BackgroundTextureImage_Release.Draw();
 
-                                // ลอจิกจำลองเกียร์ว่าง (Neutral) 
-                                // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
-                                if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
+                                if (isKMH)
                                 {
-                                    isNeutral = true;
+
+                                    switch (isUnitsLanguage)
+                                    {
+
+                                        case 0:
+                                            ImageKMH_Release.Draw();
+                                            break;
+                                        case 1:
+                                            ImageKMH_DNKNOR_Release.Draw();
+                                            break;
+                                        case 2:
+                                            ImageKMH_NLD_Release.Draw();
+                                            break;
+                                        case 3:
+                                            ImageKMH_RUS_Release.Draw();
+                                            break;
+                                        case 4:
+                                            ImageKMH_TUR_Release.Draw();
+                                            break;
+                                        case 5:
+                                            ImageKMH_UKR_Release.Draw();
+                                            break;
+                                        case 6:
+                                            ImageKMH_VNM_Release.Draw();
+                                            break;
+                                    }
                                 }
 
-                                // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
-                                if (currentGear != lastGear || isNeutral != wasNeutral)
+                                if (isMPH)
                                 {
-                                    string textureNameGear = GetGearTextureName(currentGear, isNeutral);
+                                    switch (isUnitsLanguage)
+                                    {
+                                        case 0:
+                                            ImageMPH_Release.Draw();
+                                            break;
+                                        case 1:
+                                            ImageMPH_Release.Draw();
+                                            break;
+                                        case 2:
+                                            ImageMPH_NLD_Release.Draw();
+                                            break;
+                                        case 3:
+                                            ImageMPH_RUS_Release.Draw();
+                                            break;
+                                        case 4:
+                                            ImageMPH_TUR_Release.Draw();
+                                            break;
+                                        case 5:
+                                            ImageMPH_UKR_Release.Draw();
+                                            break;
+                                        case 6:
+                                            ImageMPH_VNM_Release.Draw();
+                                            break;
+                                    }
+                                }
 
-                                    // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
-                                    // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
-                                    gearTexture_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Release, textureNameGear);
-                                    gearTexture_Release.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
 
-                                    gearTexture_Release_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Release, textureNameGear);
-                                    gearTexture_Release_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
-                                    
-                                    lastGear = currentGear;
-                                    wasNeutral = isNeutral;
+                                speedTextureImage_Release.Draw();
+
+
+
+                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
+                                {
+                                    LabelRPM_2000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
+                                {
+                                    LabelRPM_2200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
+                                {
+                                    LabelRPM_2400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
+                                {
+                                    LabelRPM_2600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
+                                {
+                                    LabelRPM_2800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
+                                {
+                                    LabelRPM_3000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
+                                {
+                                    LabelRPM_4000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
+                                {
+                                    LabelRPM_4500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
+                                {
+                                    LabelRPM_5000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
+                                {
+                                    LabelRPM_5200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
+                                {
+                                    LabelRPM_5400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
+                                {
+                                    LabelRPM_5600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
+                                {
+                                    LabelRPM_5800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
+                                {
+                                    LabelRPM_6000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
+                                {
+                                    LabelRPM_6200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
+                                {
+                                    LabelRPM_6400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
+                                {
+                                    LabelRPM_6600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
+                                {
+                                    LabelRPM_6800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
+                                {
+                                    LabelRPM_7000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
+                                {
+                                    LabelRPM_7200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
+                                {
+                                    LabelRPM_7400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
+                                {
+                                    LabelRPM_7600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
+                                {
+                                    LabelRPM_7800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
+                                {
+                                    LabelRPM_8000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
+                                {
+                                    LabelRPM_8200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
+                                {
+                                    LabelRPM_8400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
+                                {
+                                    LabelRPM_8600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
+                                {
+                                    LabelRPM_8800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
+                                {
+                                    LabelRPM_9000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
+                                {
+                                    LabelRPM_9200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
+                                {
+                                    LabelRPM_9400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
+                                {
+                                    LabelRPM_9600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
+                                {
+                                    LabelRPM_9800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
+                                {
+                                    LabelRPM_10000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
+                                {
+                                    LabelRPM_10500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
+                                {
+                                    LabelRPM_11000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
+                                {
+                                    LabelRPM_11500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
+                                {
+                                    LabelRPM_12000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
+                                {
+                                    LabelRPM_12500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
+                                {
+                                    LabelRPM_13000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
+                                {
+                                    LabelRPM_13500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
+                                {
+                                    LabelRPM_14000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
+                                {
+                                    LabelRPM_14500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
+                                {
+                                    LabelRPM_15000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
+                                {
+                                    LabelRPM_15500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
+                                {
+                                    LabelRPM_16000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
+                                {
+                                    LabelRPM_16500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
+                                {
+                                    LabelRPM_17000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
+                                {
+                                    LabelRPM_18000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
+                                {
+                                    LabelRPM_19000_Release.Draw();
+                                }
+                                else
+                                {
+                                    LabelRPMDeafult_Release.Draw();
+                                }
+                                if (gearhudcolour_default)
+                                {
+                                    if (gearTexture_Release != null)
+                                    {
+                                        gearTexture_Release.Draw();
+                                    }
+                                }
+                                if (gearhudcolour_red)
+                                {
+                                    if (gearTexture_Release != null)
+                                    {
+                                        gearTexture_Release_Red.Draw();
+                                    }
+                                }
+
+                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
+                                {
+                                    HandbrakeTextureImage_Release.Draw();
+                                }
+
+                                Vehicle veh = playerPed.CurrentVehicle;
+
+                                /* Speed Text */
+
+                                // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
+                                // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
+                                float speedKmh = veh.Speed * isSwitchUnits;
+
+                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
+                                if (speedKmh > 1000f) speedKmh = 1000f;
+                                if (speedKmh < 0f) speedKmh = 0f;
+
+                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
+                                int speedInt = (int)Math.Round(speedKmh);
+                                string textureName = SpeedBaseTextureName_Release + speedInt.ToString("D4");
+
+                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
+                                speedTextureImage_Release.Texture = textureName;
+
+                                if (isRevEngineCurrent)
+                                {
+                                    /* RPM */
+
+                                    // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
+                                    float targetRpm = veh.CurrentRPM;
+
+                                    // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
+                                    smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
+
+                                    // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
+                                    // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
+                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
+
+                                    RevTextureImage_Release.Texture = RPMtextureName;
+                                    RevTextureImage_Release.Draw();
+                                }
+
+                                if (isABSHUD)
+                                {
+                                    ABSTextureImage_Release.Draw();
+                                }
+                                if (isTCSHUD)
+                                {
+                                    TCSTextureImage_Release.Draw();
+                                }
+
+                                Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
+                                // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
+                                if (playerVeh != null && playerVeh.Exists())
+                                {
+                                    isEngineOn = playerVeh.IsEngineRunning;
+
+                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
+                                    if (isEngineOn)
+                                    {
+                                        // Engine On
+                                        isRevEngineCurrent = true;
+                                    }
+                                    else
+                                    {
+                                        // Engine Off
+                                        RevEngineOffImage_Release.Draw();
+                                        isRevEngineCurrent = false;
+                                    }
+                                }
+
+                                // Check if the player is alive and inside a vehicle
+                                if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
+                                {
+                                    Vehicle veh2 = playerPed.CurrentVehicle;
+                                    int currentGear = veh2.CurrentGear;
+                                    bool isNeutral = false;
+
+                                    // ลอจิกจำลองเกียร์ว่าง (Neutral) 
+                                    // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
+                                    if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
+                                    {
+                                        isNeutral = true;
+                                    }
+
+                                    // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
+                                    if (currentGear != lastGear || isNeutral != wasNeutral)
+                                    {
+                                        string textureNameGear = GetGearTextureName(currentGear, isNeutral);
+
+                                        // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
+                                        // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
+                                        gearTexture_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Release, textureNameGear);
+                                        gearTexture_Release.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
+
+                                        gearTexture_Release_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Release, textureNameGear);
+                                        gearTexture_Release_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
+
+                                        lastGear = currentGear;
+                                        wasNeutral = isNeutral;
+                                    }
+                                }
+                                else
+                                {
+                                    // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
+                                    smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
+
+                                    // รีเซ็ตสถานะเมื่อลงจากรถ
+                                    lastGear = -1;
+                                    wasNeutral = false;
+                                    gearTexture_Release = null;
+                                    gearTexture_Release_Red = null;
                                 }
                             }
-                            else
-                            {
-                                // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
-                                smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
 
-                                // รีเซ็ตสถานะเมื่อลงจากรถ
-                                lastGear = -1;
-                                wasNeutral = false;
-                                gearTexture_Release = null;
-                                gearTexture_Release_Red = null;
+                            // Season 5 V1 HUD
+                            if (HUD_Season5V1)
+                            {
+                                // Outline
+                                BackgroundTextureImage2_Release.Draw();
+                                BackgroundTextureImage_Season5V1.Draw();
+
+                                if (isKMH)
+                                {
+
+                                    switch (isUnitsLanguage)
+                                    {
+
+                                        case 0:
+                                            ImageKMH_Release.Draw();
+                                            break;
+                                        case 1:
+                                            ImageKMH_DNKNOR_Release.Draw();
+                                            break;
+                                        case 2:
+                                            ImageKMH_NLD_Release.Draw();
+                                            break;
+                                        case 3:
+                                            ImageKMH_RUS_Release.Draw();
+                                            break;
+                                        case 4:
+                                            ImageKMH_TUR_Release.Draw();
+                                            break;
+                                        case 5:
+                                            ImageKMH_UKR_Release.Draw();
+                                            break;
+                                        case 6:
+                                            ImageKMH_VNM_Release.Draw();
+                                            break;
+                                    }
+                                }
+
+                                if (isMPH)
+                                {
+                                    switch (isUnitsLanguage)
+                                    {
+                                        case 0:
+                                            ImageMPH_Release.Draw();
+                                            break;
+                                        case 1:
+                                            ImageMPH_Release.Draw();
+                                            break;
+                                        case 2:
+                                            ImageMPH_NLD_Release.Draw();
+                                            break;
+                                        case 3:
+                                            ImageMPH_RUS_Release.Draw();
+                                            break;
+                                        case 4:
+                                            ImageMPH_TUR_Release.Draw();
+                                            break;
+                                        case 5:
+                                            ImageMPH_UKR_Release.Draw();
+                                            break;
+                                        case 6:
+                                            ImageMPH_VNM_Release.Draw();
+                                            break;
+                                    }
+                                }
+
+
+                                speedTextureImage_Release.Draw();
+
+
+
+                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
+                                {
+                                    LabelRPM_2000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
+                                {
+                                    LabelRPM_2200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
+                                {
+                                    LabelRPM_2400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
+                                {
+                                    LabelRPM_2600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
+                                {
+                                    LabelRPM_2800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
+                                {
+                                    LabelRPM_3000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
+                                {
+                                    LabelRPM_4000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
+                                {
+                                    LabelRPM_4500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
+                                {
+                                    LabelRPM_5000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
+                                {
+                                    LabelRPM_5200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
+                                {
+                                    LabelRPM_5400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
+                                {
+                                    LabelRPM_5600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
+                                {
+                                    LabelRPM_5800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
+                                {
+                                    LabelRPM_6000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
+                                {
+                                    LabelRPM_6200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
+                                {
+                                    LabelRPM_6400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
+                                {
+                                    LabelRPM_6600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
+                                {
+                                    LabelRPM_6800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
+                                {
+                                    LabelRPM_7000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
+                                {
+                                    LabelRPM_7200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
+                                {
+                                    LabelRPM_7400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
+                                {
+                                    LabelRPM_7600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
+                                {
+                                    LabelRPM_7800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
+                                {
+                                    LabelRPM_8000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
+                                {
+                                    LabelRPM_8200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
+                                {
+                                    LabelRPM_8400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
+                                {
+                                    LabelRPM_8600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
+                                {
+                                    LabelRPM_8800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
+                                {
+                                    LabelRPM_9000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
+                                {
+                                    LabelRPM_9200_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
+                                {
+                                    LabelRPM_9400_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
+                                {
+                                    LabelRPM_9600_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
+                                {
+                                    LabelRPM_9800_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
+                                {
+                                    LabelRPM_10000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
+                                {
+                                    LabelRPM_10500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
+                                {
+                                    LabelRPM_11000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
+                                {
+                                    LabelRPM_11500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
+                                {
+                                    LabelRPM_12000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
+                                {
+                                    LabelRPM_12500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
+                                {
+                                    LabelRPM_13000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
+                                {
+                                    LabelRPM_13500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
+                                {
+                                    LabelRPM_14000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
+                                {
+                                    LabelRPM_14500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
+                                {
+                                    LabelRPM_15000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
+                                {
+                                    LabelRPM_15500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
+                                {
+                                    LabelRPM_16000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
+                                {
+                                    LabelRPM_16500_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
+                                {
+                                    LabelRPM_17000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
+                                {
+                                    LabelRPM_18000_Release.Draw();
+                                }
+                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
+                                {
+                                    LabelRPM_19000_Release.Draw();
+                                }
+                                else
+                                {
+                                    LabelRPMDeafult_Release.Draw();
+                                }
+                                if (gearhudcolour_default)
+                                {
+                                    if (gearTexture_Season5 != null)
+                                    {
+                                        gearTexture_Season5.Draw();
+                                    }
+                                }
+                                if (gearhudcolour_red)
+                                {
+                                    if (gearTexture_Season5 != null)
+                                    {
+                                        gearTexture_Season5_Red.Draw();
+                                    }
+                                }
+
+                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
+                                {
+                                    HandbrakeTextureImage_Release.Draw();
+                                }
+
+                                Vehicle veh = playerPed.CurrentVehicle;
+
+                                /* Speed Text */
+
+                                // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
+                                // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
+                                float speedKmh = veh.Speed * isSwitchUnits;
+
+                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
+                                if (speedKmh > 1000f) speedKmh = 1000f;
+                                if (speedKmh < 0f) speedKmh = 0f;
+
+                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
+                                int speedInt = (int)Math.Round(speedKmh);
+                                string textureName = SpeedBaseTextureName_Release + speedInt.ToString("D4");
+
+                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
+                                speedTextureImage_Release.Texture = textureName;
+
+                                if (isRevEngineCurrent)
+                                {
+                                    /* RPM */
+
+                                    // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
+                                    float targetRpm = veh.CurrentRPM;
+
+                                    // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
+                                    smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
+
+                                    // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
+                                    // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
+                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
+
+                                    RevTextureImage_Season5V1.Texture = RPMtextureName;
+                                    RevTextureImage_Season5V1.Draw();
+                                }
+
+                                if (isABSHUD)
+                                {
+                                    ABSTextureImage_Season5.Draw();
+                                }
+                                if (isTCSHUD)
+                                {
+                                    TCSTextureImage_Season5.Draw();
+                                }
+
+                                Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
+                                // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
+                                if (playerVeh != null && playerVeh.Exists())
+                                {
+                                    isEngineOn = playerVeh.IsEngineRunning;
+
+                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
+                                    if (isEngineOn)
+                                    {
+                                        // Engine On
+                                        isRevEngineCurrent = true;
+                                    }
+                                    else
+                                    {
+                                        // Engine Off
+                                        RevEngineOffImage_Release.Draw();
+                                        isRevEngineCurrent = false;
+                                    }
+                                }
+
+                                // Check if the player is alive and inside a vehicle
+                                if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
+                                {
+                                    Vehicle veh2 = playerPed.CurrentVehicle;
+                                    int currentGear = veh2.CurrentGear;
+                                    bool isNeutral = false;
+
+                                    // ลอจิกจำลองเกียร์ว่าง (Neutral) 
+                                    // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
+                                    if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
+                                    {
+                                        isNeutral = true;
+                                    }
+
+                                    // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
+                                    if (currentGear != lastGear || isNeutral != wasNeutral)
+                                    {
+                                        string textureNameGear = GetGearTextureName(currentGear, isNeutral);
+
+                                        // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
+                                        // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
+                                        gearTexture_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Season5, textureNameGear);
+                                        gearTexture_Season5.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
+
+                                        gearTexture_Season5_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Season5, textureNameGear);
+                                        gearTexture_Season5_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
+
+                                        lastGear = currentGear;
+                                        wasNeutral = isNeutral;
+                                    }
+                                }
+                                else
+                                {
+                                    // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
+                                    smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
+
+                                    // รีเซ็ตสถานะเมื่อลงจากรถ
+                                    lastGear = -1;
+                                    wasNeutral = false;
+                                    gearTexture_Season5 = null;
+                                    gearTexture_Season5_Red = null;
+                                }
+
+                                if(headlightsSeason5)
+                                {
+                                    HeadlightHUD_Season5.Draw();
+                                }
                             }
                         }
                     }
-                }
-                // Phone and Character Wheel
-                Vehicle characterWheels = Game.Player.Character.CurrentVehicle;
-                if (characterWheels != null && characterWheels.Exists())
-                {
-                    // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                    if (Game.IsControlPressed(GTA.Control.CharacterWheel))
+                    // Phone and Character Wheel
+                    Vehicle characterWheels = Game.Player.Character.CurrentVehicle;
+                    if (characterWheels != null && characterWheels.Exists())
                     {
-                        isSpeedometerBackgroundDemo = false;
-                    }
-                    else
-                    {
-                        isSpeedometerBackgroundDemo = true;
-
-                        // Ensure the player exists and is alive
-                        if (playerPed != null && playerPed.Exists() && playerPed.IsAlive)
+                        // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                        if (Game.IsControlPressed(GTA.Control.CharacterWheel))
                         {
-                            // Call the native hash function
-                            // Arguments: Hash, Return Type, Input Parameters (the ped's handle)
-                            bool isUsingPhone = Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, playerPed.Handle);
+                            isHideHUDForOpenPhoneorCharacterWheel = false;
+                        }
+                        else
+                        {
+                            isHideHUDForOpenPhoneorCharacterWheel = true;
 
-                            if (isUsingPhone)
+                            // Ensure the player exists and is alive
+                            if (playerPed != null && playerPed.Exists() && playerPed.IsAlive)
                             {
-                                isSpeedometerBackgroundDemo = false;
-                            }
-                            else
-                            {
-                                isSpeedometerBackgroundDemo = true;
+                                // Call the native hash function
+                                // Arguments: Hash, Return Type, Input Parameters (the ped's handle)
+                                bool isUsingPhone = Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, playerPed.Handle);
+
+                                if (isUsingPhone)
+                                {
+                                    isHideHUDForOpenPhoneorCharacterWheel = false;
+                                }
+                                else
+                                {
+                                    isHideHUDForOpenPhoneorCharacterWheel = true;
+                                }
                             }
                         }
                     }
@@ -2853,13 +3441,13 @@ namespace TDUSCSpeedometerGTAV
             // Detect entry: Player is in a vehicle now, but wasn't in the previous frame
             if (isInVehicle && !_wasInVehicle)
             {
-                isSpeedometerBackgroundDemo = true;
+                statusHUD = true;
                 _wasInVehicle = true;
             }
             // Detect exit: Player is no longer in a vehicle, but was in one in the previous frame
             else if (!isInVehicle && _wasInVehicle)
             {
-                isSpeedometerBackgroundDemo = false;
+                statusHUD = false;
                 _lastVehicle = null;
                 _wasInVehicle = false;
             }
@@ -2941,7 +3529,7 @@ namespace TDUSCSpeedometerGTAV
         {
             switch (vClass)
             {
-                case VehicleClass.Compacts: return "Compacts";
+                case VehicleClass.Compacts:return "Compacts";
                 case VehicleClass.Sedans: return "Sedans";
                 case VehicleClass.SUVs: return "SUV";
                 case VehicleClass.Coupes: return "Coupes";
