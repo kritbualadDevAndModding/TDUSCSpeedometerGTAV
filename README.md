@@ -10,4 +10,6 @@ GTA V Mod Test Drive Unlimited Solar Crown HUD
 - **[OpenIV](https://www.gta5-mods.com/tools/openiv)**
 
 
-I haven't tried the Enhanced version yet; I recommend playing the Legacy version. We will have an update for the Enhanced version next.
+I haven't tried the Enhanced version yet; I recommend playing the Legacy version.
+
+We will have an update for the Enhanced version next.
