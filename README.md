@@ -11,3 +11,5 @@ Requirements
 
 
 **I haven't tried the Enhanced version yet; I recommend playing the Legacy version.**
+
+**We will have an update for the Enhanced version next.**
