@@ -1,3 +1,3 @@
-# TDUSolarCrownSpeedometerGTAV
+# TDU Solar Crown Speedometer GTA V
 
-TDUSolarCrownSpeedometerGTAV
+GTA V Mod Test Drive Unlimited Solar Crown HUD
