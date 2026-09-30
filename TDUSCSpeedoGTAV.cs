@@ -19,7 +19,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.8";
+        private string version = "0.9";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -260,6 +260,26 @@ namespace TDUSCSpeedometerGTAV
         private ScaledTexture HeadlightHUD_Season5;
         private const string HeadlightHUD_Dict_Season5 = "!TDUSCReleaseHUDBackground";
         private const string HeadlightHUD_Name_Season5 = "Lighting";
+
+        private ScaledTexture TurnSignalLeftDemo;
+        private const string TurnSignalLeftDemo_Dict = "!TDUSCDemoHUDBackground";
+        private const string TurnSignalLeftDemo_Name = "TurnLeft";
+        private bool TurnSignalLeftDemo_Enabled;
+
+        private ScaledTexture TurnSignalRightDemo;
+        private const string TurnSignalRightDemo_Dict = "!TDUSCDemoHUDBackground";
+        private const string TurnSignalRightDemo_Name = "TurnRight";
+        private bool TurnSignalRightDemo_Enabled;
+
+        private ScaledTexture TurnSignalLeft;
+        private const string TurnSignalLeft_Dict = "!TDUSCReleaseHUDBackground";
+        private const string TurnSignalLeft_Name = "turnleft";
+        private bool TurnSignalLeftRelease_Enabled;
+
+        private ScaledTexture TurnSignalRight;
+        private const string TurnSignalRight_Dict = "!TDUSCReleaseHUDBackground";
+        private const string TurnSignalRight_Name = "turnright";
+        private bool TurnSignalRightRelease_Enabled;
 
         // Set LabelRPM
         private ScaledTexture LabelRPMDeafult;
@@ -510,6 +530,7 @@ namespace TDUSCSpeedometerGTAV
         private Dictionary<string, CarData> carNamesDict = new Dictionary<string, CarData>(StringComparer.OrdinalIgnoreCase);
         private int lastVehicleHandle = 0;
 
+
         public TDUSCSpeedoGTAV()
         {
             LoadConfigData();
@@ -752,9 +773,9 @@ namespace TDUSCSpeedometerGTAV
             {
                 // Button Only
             };
+
             Tick += OnTick;
             KeyUp += OnKeyDown;
-
 
             switch (UseKMH)
             {
@@ -994,6 +1015,12 @@ namespace TDUSCSpeedometerGTAV
             RevEngineOffImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevEngineOffImageDict_Release, RevEngineOffImageName_Release);
 
             HeadlightHUD_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HeadlightHUD_Dict_Season5, HeadlightHUD_Name_Season5);
+
+            TurnSignalLeftDemo = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalLeftDemo_Dict, TurnSignalLeftDemo_Name);
+            TurnSignalRightDemo = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalRightDemo_Dict, TurnSignalRightDemo_Name);
+
+            TurnSignalLeft = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalLeft_Dict, TurnSignalLeft_Name);
+            TurnSignalRight = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalRight_Dict, TurnSignalRight_Name);
         }
         private bool categorySpeedoEnabled;
 
@@ -1135,6 +1162,7 @@ namespace TDUSCSpeedometerGTAV
                 _mainMenu.Visible = !_mainMenu.Visible;
             }
         }
+
         // TDU Solar Crown Speedometer
         private bool isMainHUDModEnabled;
         private bool isHideHUDForOpenPhoneorCharacterWheel;
@@ -1155,14 +1183,16 @@ namespace TDUSCSpeedometerGTAV
                 // Speedometer Base
                 Ped playerPed = Game.Player.Character;
                 Player player = Game.Player;
-                
+
                 if (statusHUD && playerPed != null && playerPed.IsInVehicle())
                 {
-
-
-                    Vehicle vehicleHeadLight = playerPed.CurrentVehicle;
+                    Vehicle vehicleStatus = playerPed.CurrentVehicle;
                     // Turn on headlights automatically if desired
-                    if (vehicleHeadLight.AreLightsOn)
+                    if (vehicleStatus.AreHighBeamsOn)
+                    {
+                        headlightsSeason5 = true;
+                    }
+                    else if (vehicleStatus.AreLightsOn)
                     {
                         headlightsSeason5 = true;
                     }
@@ -1170,6 +1200,50 @@ namespace TDUSCSpeedometerGTAV
                     {
                         headlightsSeason5 = false;
                     }
+
+
+                    // ส่วนนี้จะทำงานทุกๆ 500 มิลลิวินาที (ไม่บล็อกการเช็คค่า bool ด้านบน)
+                    if (vehicleStatus.IsLeftIndicatorLightOn)
+                    {
+                        // ใช้เฉพาะ Game.GameTime หารเอาเศษ เพื่อทำไฟกระพริบสลับทุกๆ 0.5 วินาที
+                        if ((Game.GameTime % 1000) < 500)
+                        {
+                            TurnSignalLeftRelease_Enabled = true;
+                            TurnSignalLeftDemo_Enabled = true;
+                        }
+                        else
+                        {
+                            TurnSignalLeftRelease_Enabled = false;
+                            TurnSignalLeftDemo_Enabled = false;
+                        }
+                    }
+                    else
+                    {
+                        TurnSignalLeftRelease_Enabled = false;
+                        TurnSignalLeftDemo_Enabled = false;
+                    }
+
+
+                    if (vehicleStatus.IsRightIndicatorLightOn)
+                    {
+                        // ใช้เฉพาะ Game.GameTime หารเอาเศษ เพื่อทำไฟกระพริบสลับทุกๆ 0.5 วินาที
+                        if ((Game.GameTime % 1000) < 500)
+                        {
+                            TurnSignalRightRelease_Enabled = true;
+                            TurnSignalRightDemo_Enabled = true;
+                        }
+                        else
+                        {
+                            TurnSignalRightRelease_Enabled = false;
+                            TurnSignalRightDemo_Enabled = false;
+                        }
+                    }
+                    else
+                    {
+                        TurnSignalRightRelease_Enabled = false;
+                        TurnSignalRightDemo_Enabled = false;
+                    }
+
 
                     if (isHideHUDForOpenPhoneorCharacterWheel)
                     {
@@ -2551,6 +2625,14 @@ namespace TDUSCSpeedometerGTAV
                                     gearTexture = null;
                                     gearTexture_Red = null;
                                 }
+                                if (TurnSignalLeftDemo_Enabled)
+                                {
+                                    TurnSignalLeftDemo.Draw();
+                                }
+                                if (TurnSignalRightDemo_Enabled)
+                                {
+                                    TurnSignalRightDemo.Draw();
+                                }
                             }
 
                             // Release HUD
@@ -2955,6 +3037,15 @@ namespace TDUSCSpeedometerGTAV
                                     wasNeutral = false;
                                     gearTexture_Release = null;
                                     gearTexture_Release_Red = null;
+                                }
+
+                                if (TurnSignalLeftRelease_Enabled)
+                                {
+                                    TurnSignalLeft.Draw();
+                                }
+                                if (TurnSignalRightRelease_Enabled)
+                                {
+                                    TurnSignalRight.Draw();
                                 }
                             }
 
@@ -3362,9 +3453,17 @@ namespace TDUSCSpeedometerGTAV
                                     gearTexture_Season5_Red = null;
                                 }
 
-                                if(headlightsSeason5)
+                                if (headlightsSeason5)
                                 {
                                     HeadlightHUD_Season5.Draw();
+                                }
+                                if (TurnSignalLeftRelease_Enabled)
+                                {
+                                    TurnSignalLeft.Draw();
+                                }
+                                if (TurnSignalRightRelease_Enabled)
+                                {
+                                    TurnSignalRight.Draw();
                                 }
                             }
                         }
