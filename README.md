@@ -33,45 +33,39 @@ This is my first experience creating a script mods first time, a speedometer HUD
 
 **How to Install**
 -------------------------------------------------------------------
-**scripts** folder.
-- Place it in the main **GTA V** game folder.
+**`scripts`** folder.
+- Place it in the main **`GTA V`** game folder.
 
-**script_txds** folder.
+**`script_txds`** folder.
 
-- Open **OpenIV** > Select **GTA V**. Go to **mods\update\update.rpf\x64\textures\script_txds.rpf**
+- Open **`OpenIV`** > Select **`GTA V`**. Go to **`mods\update\update.rpf\x64\textures\script_txds.rpf`**
 
 
 **Using the Max RPM add-on is very easy.**
 
-You do not need to exit the game. you simply need to activate the Console first. **ScriptHookVDotNet.ini** > **ConsoleKeyBinding (Default F4)**
+You do not need to exit the game. you simply need to activate the Console first. **`ScriptHookVDotNet.ini`** > **`ConsoleKeyBinding`** (Default F4)
 
-Go to **scripts\TDUSCSpeedometerGTAVSetRPM\Example.cfg**.
+Go to **`scripts\TDUSCSpeedometerGTAVSetRPM\Example.cfg`**.
 
 Then, add the desired line.
 
 Example:
-
-
-**Pfister Comet\comet2\8000**
-
+--------------------------------------------
+**`Pfister Comet\comet2\8000`**
 
 Pfister Comet = Custom Vehicle Name
 
-
 comet2 = Spawn Name
-
-
-
 
 8000 = Max RPM
 
 
-**Save** the file.
+**`Save`** the file.
 
-Then, open the in-game console, type **Reload()**, and press **Enter**.
+Then, open the in-game console, type **`Reload()`**, and press **`Enter`**.
 
-Once the script has reloaded, open the TDUSCSpeedoV menu and check the **Show Debug Name Cars** option.
+Once the script has reloaded, open the TDUSCSpeedoV menu and check the **`Show Debug Name Cars`** option.
 
-Open Menu
+TDUSCSpeedoV Menu
 ------------------------------
-**Menu Key = K**
+**Menu Key = `K`**
