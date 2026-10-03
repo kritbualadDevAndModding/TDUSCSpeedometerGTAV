@@ -23,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.91";
+        private string version = "0.92";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -984,7 +984,7 @@ namespace TDUSCSpeedometerGTAV
 
             ABSTextureImage.Dictionary = HUDBackground;
             TCSTextureImage.Dictionary = HUDBackground;
-            //       RevEngineOffImage.Dictionary = HUDBackground;
+            RevEngineOffImage.Dictionary = HUDRev;
 
             HeadlightsImage.Color = Color.FromArgb(headlightToggle, 255, 255, 255);
 
