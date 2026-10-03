@@ -10,3 +10,4 @@ GTA V Mod Test Drive Unlimited Solar Crown HUD
 - **[OpenIV](https://www.gta5-mods.com/tools/openiv)**
 - **[NativeUI](https://gtaforums.com/topic/809284-net-nativeui/)**
 - **[LemonUI](https://www.gta5-mods.com/tools/lemonui) SHVDN3**
+- **[Resource Adjuster](https://www.gta5-mods.com/tools/resource-adjuster)**
