@@ -42,7 +42,7 @@ This is my first experience creating a script mods first time, a speedometer HUD
 
 
 **Using the Max RPM add-on is very easy.**
-
+--------------------------------------------
 You do not need to exit the game. you simply need to activate the Console first. **`ScriptHookVDotNet.ini`** > **`ConsoleKeyBinding`** (Default F4)
 
 Go to **`scripts\TDUSCSpeedometerGTAVSetRPM\Example.cfg`**.
@@ -50,7 +50,7 @@ Go to **`scripts\TDUSCSpeedometerGTAVSetRPM\Example.cfg`**.
 Then, add the desired line.
 
 Example:
---------------------------------------------
+
 **`Pfister Comet\comet2\8000`**
 
 Pfister Comet = Custom Vehicle Name
