@@ -2,6 +2,25 @@
 
 GTA V Mod Test Drive Unlimited Solar Crown HUD
 
+**Description**
+
+This is my first experience creating a script mods first time, a speedometer HUD for Test Drive Unlimited Solar Crown. I had previously experimented with Assetto Corsa before deciding to create a speedometer mod for GTA 5.
+
+**Features**
+- Version HUD ( Demo , Release , Season 5 V1 , Season 5 V2 )
+- Rev RPM
+- Drift HUD for Demo HUD only
+- Handbrake HUD
+- Turn Signal HUD
+- Gear HUD
+- Throttle and Brake HUD for Season 5 V2 only
+- Headlight HUD for Season 5 only
+- Units
+- Language Units (Denmark / Norway , Nederlands , Russian , Turkish , Ukriane ,  Vietnamese)
+- ABS HUD
+- TCS HUD
+- Show Debug Name Cars
+
 **Requirement**
 - **GTA V Legacy Version 1.0.3889.0 or Latest**
 - **[.NET Framework 4.8](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48)**
@@ -10,4 +29,13 @@ GTA V Mod Test Drive Unlimited Solar Crown HUD
 - **[OpenIV](https://www.gta5-mods.com/tools/openiv)**
 - **[NativeUI](https://gtaforums.com/topic/809284-net-nativeui/)**
 - **[LemonUI](https://www.gta5-mods.com/tools/lemonui) SHVDN3**
-- **[Resource Adjuster](https://www.gta5-mods.com/tools/resource-adjuster)**
+- **[Resource Adjuster](https://www.gta5-mods.com/tools/resource-adjuster) Fix issue where maps were loading abnormally.**
+
+**How to Install**
+-------------------------------------------------------------------
+**scripts** folder.
+- Place it in the main **GTA V** game folder.
+
+**script_txds** folder.
+
+- Open **OpenIV** > Select **GTA V**. Go to **mods\update\update.rpf\x64\textures\script_txds.rpf**
