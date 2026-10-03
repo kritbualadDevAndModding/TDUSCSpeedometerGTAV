@@ -5,12 +5,16 @@ using GTA.NaturalMotion;
 using GTA.UI;
 using LemonUI;
 using LemonUI.Elements;
-using NativeUI;
+using LemonUI.Menus;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Design;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.Remoting.Channels;
 using System.Security.AccessControl;
 using System.Windows.Forms;
 
@@ -19,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.9";
+        private string version = "0.91";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -49,8 +53,8 @@ namespace TDUSCSpeedometerGTAV
         private bool wasPhoneVisible = false;
 
         // Menu UI
-        private MenuPool _menuPool;
-        private UIMenu _mainMenu;
+        private ObjectPool _menuPool;
+        private NativeMenu _mainMenu;
 
         // Track the last vehicle the player was in to detect when they exit
         private Vehicle _lastVehicle = null;
@@ -62,11 +66,6 @@ namespace TDUSCSpeedometerGTAV
         private const float MinSpeedThreshold = 3.0f;
 
         private bool isKMH;
-        private bool isKMH_DNKNOR;
-        private bool isKMH_RUS;
-        private bool isKMH_TUR;
-        private bool isKMH_UKR;
-        private bool isKMH_VN;
 
         private bool isMPH;
 
@@ -87,203 +86,63 @@ namespace TDUSCSpeedometerGTAV
 
 
         private int SelectVersionHUD;
-        // Demo HUD
-        private bool HUD_Demo;
-        private const string GearTextureDict = "!TDUSCDemoHUDGear";
+
+        private string HUDBackground;
+        private string BackgroundTextureName = "background";
+        private string HUDHandbrake;
+        private string HUDTurnSignalLeft;
+        private string HUDTurnSignalRight;
+        private string HUDGear;
+        private string HUDRev;
+        private string HUDSpeed;
+        private string HUDABS;
+        private string HUDTCS;
+        
         private ScaledTexture BackgroundTextureImage;
-        private const string BackgroundTextureDict = "!TDUSCDemoHUDBackground";
-        private const string BackgroundTextureName = "background";
         private ScaledTexture BackgroundTextureImage2;
-        private const string BackgroundTextureDict2 = "!TDUSCDemoHUDBackground";
         private const string BackgroundTextureName2 = "background2";
-        private ScaledTexture ImageKMH;
-        private const string ImageKMHDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMHName = "kmh";
-        private ScaledTexture ImageKMH_DNKNOR;
-        private const string ImageKMH_DNKNORDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMH_DNKNORName = "kmh_DenmarkNorway";
-        private ScaledTexture ImageKMH_RUS;
-        private const string ImageKMH_RUSDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMH_RUSName = "kmh_Russian";
-        private ScaledTexture ImageKMH_TUR;
-        private const string ImageKMH_TURDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMH_TURName = "kmh_Turkish";
-        private ScaledTexture ImageKMH_UKR;
-        private const string ImageKMH_UKRDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMH_UKRName = "kmh_Ukriane";
-        private ScaledTexture ImageKMH_VNM;
-        private const string ImageKMH_VNDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMH_VNName = "kmh_Vietnam";
-        private ScaledTexture ImageKMH_NLD;
-        private const string ImageKMH_NLDDict = "!TDUSCDemoHUDBackground";
-        private const string ImageKMH_NLDName = "kmh_Nederlands";
-        private ScaledTexture ImageMPH;
-        private const string ImageMPHDict = "!TDUSCDemoHUDBackground";
-        private const string ImageMPHName = "mph";
-        private ScaledTexture ImageMPH_NLD;
-        private const string ImageMPH_NLDDict = "!TDUSCDemoHUDBackground";
-        private const string ImageMPH_NLDName = "mph_Nederlands";
-        private ScaledTexture ImageMPH_RUS;
-        private const string ImageMPH_RUSDict = "!TDUSCDemoHUDBackground";
-        private const string ImageMPH_RUSName = "mph_Russian";
-        private ScaledTexture ImageMPH_TUR;
-        private const string ImageMPH_TURDict = "!TDUSCDemoHUDBackground";
-        private const string ImageMPH_TURName = "mph_Turkish";
-        private ScaledTexture ImageMPH_UKR;
-        private const string ImageMPH_UKRDict = "!TDUSCDemoHUDBackground";
-        private const string ImageMPH_UKRName = "mph_Ukriane";
-        private ScaledTexture ImageMPH_VNM;
-        private const string ImageMPH_VNMDict = "!TDUSCDemoHUDBackground";
-        private const string ImageMPH_VNMName = "mph_Vietnam";
+
+        
+          private ScaledTexture ImageKMH;
+      //  private string ImageKMHName = "";
+          private ScaledTexture ImageMPH;
+      //  private string ImageMPHName = "mph";
+
+
+
+
         private ScaledTexture DriftTextureImage;
-        private const string DriftTextureDict = "!TDUSCDemoHUDBackground";
         private const string DriftTextureName = "Drift";
         private ScaledTexture HandbrakeTextureImage;
-        private const string HandbrakeTextireDict = "!TDUSCDemoHUDBackground";
         private const string HandbrakeTextureName = "Parking_Brake";
+
+
         private ScaledTexture speedTextureImage;
-        private const string SpeedTextureDict = "!TDUSCDemoHUDSpeed";
         private const string SpeedBaseTextureName = "speed_";
 
         private ScaledTexture RevTextureImage;
-        private const string RevTextureDict = "!TDUSCDemoHUDRev";
         private const string RevBaseTextureName = "rev_";
 
-        private ScaledTexture RevTextureImage_Season5V1;
-        private const string RevTextureDict_Season5V1 = "!TDUSCReleaseHUDRevSeason5";
-        private const string RevBaseTextureNameSeason5V1 = "rev_";
-
         private ScaledTexture ABSTextureImage;
-        private const string ABSTextureImageDict = "!TDUSCDemoHUDBackground";
-        private const string ABSTextureImageName = "ABS";
         private ScaledTexture TCSTextureImage;
-        private const string TCSTextureImageDict = "!TDUSCDemoHUDBackground";
-        private const string TCSTextureImageName = "TCS";
-
-        private ScaledTexture TestEngineOff;
-        private const string TestEngineOffDict = "!TDUSCDemoHUDBackground";
-        private const string TestEngineOffName = "TurnLeft";
-
-        private ScaledTexture TestEngineOn;
-        private const string TestEngineOnDict = "!TDUSCDemoHUDBackground";
-        private const string TestEngineOnName = "TurnRight";
-
-        private ScaledTexture RevEngineOffImage;
-        private const string RevEngineOffImageDict = "!TDUSCDemoHUDRev";
-        private const string RevEngineOffImageName = "rev_0000";
-
-
-        // Release HUD
-        private bool HUD_Release;
-        private bool HUD_Season5V1;
-
-        private const string GearTextureDict_Release = "!TDUSCReleaseHUDGear";
-        private const string GearTextureDict_Season5 = "!TDUSCReleaseHUDGearSeason5";
-
-        private ScaledTexture BackgroundTextureImage_Release;
-        private const string BackgroundTextureDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string BackgroundTextureName_Release = "background";
-        private ScaledTexture BackgroundTextureImage2_Release;
-        private const string BackgroundTextureDict2_Release = "!TDUSCReleaseHUDBackground";
-        private const string BackgroundTextureName2_Release = "background2";
-
-        private ScaledTexture BackgroundTextureImage_Season5V1;
-        private const string BackgroundTextureName_Season5V1 = "background_Season5_V1";
-
-        private ScaledTexture ImageKMH_Release;
-        private const string ImageKMHDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMHName_Release = "kmh";
-        private ScaledTexture ImageKMH_DNKNOR_Release;
-        private const string ImageKMH_DNKNORDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMH_DNKNORName_Release = "kmh_DenmarkNorway";
-        private ScaledTexture ImageKMH_RUS_Release;
-        private const string ImageKMH_RUSDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMH_RUSName_Release = "kmh_Russian";
-        private ScaledTexture ImageKMH_TUR_Release;
-        private const string ImageKMH_TURDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMH_TURName_Release = "kmh_Turkish";
-        private ScaledTexture ImageKMH_UKR_Release;
-        private const string ImageKMH_UKRDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMH_UKRName_Release = "kmh_Ukriane";
-        private ScaledTexture ImageKMH_VNM_Release;
-        private const string ImageKMH_VNDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMH_VNName_Release = "kmh_Vietnam";
-        private ScaledTexture ImageKMH_NLD_Release;
-        private const string ImageKMH_NLDDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageKMH_NLDName_Release = "kmh_Nederlands";
-        private ScaledTexture ImageMPH_Release;
-        private const string ImageMPHDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageMPHName_Release = "mph";
-        private ScaledTexture ImageMPH_NLD_Release;
-        private const string ImageMPH_NLDDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageMPH_NLDName_Release = "mph_Nederlands";
-        private ScaledTexture ImageMPH_RUS_Release;
-        private const string ImageMPH_RUSDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageMPH_RUSName_Release = "mph_Russian";
-        private ScaledTexture ImageMPH_TUR_Release;
-        private const string ImageMPH_TURDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageMPH_TURName_Release = "mph_Turkish";
-        private ScaledTexture ImageMPH_UKR_Release;
-        private const string ImageMPH_UKRDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageMPH_UKRName_Release = "mph_Ukriane";
-        private ScaledTexture ImageMPH_VNM_Release;
-        private const string ImageMPH_VNMDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ImageMPH_VNMName_Release = "mph_Vietnam";
-        private ScaledTexture DriftTextureImage_Release;
-        private const string DriftTextureDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string DriftTextureName_Release = "Drift";
-        private ScaledTexture HandbrakeTextureImage_Release;
-        private const string HandbrakeTextireDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string HandbrakeTextureName_Release = "handbrake";
-        private ScaledTexture speedTextureImage_Release;
-        private const string SpeedTextureDict_Release = "!TDUSCReleaseHUDSpeed";
-        private const string SpeedBaseTextureName_Release = "speed_";
-        private ScaledTexture RevTextureImage_Release;
-        private const string RevTextureDict_Release = "!TDUSCReleaseHUDRev";
-
-        private ScaledTexture ABSTextureImage_Release;
-        private const string ABSTextureImageDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string ABSTextureImageName_Release = "ABS";
-        private ScaledTexture ABSTextureImage_Season5;
-        private const string ABSTextureImageName_Season5 = "ABS_Season5";
-
-        private ScaledTexture TCSTextureImage_Release;
-        private const string TCSTextureImageDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string TCSTextureImageName_Release = "TCS";
-        private ScaledTexture TCSTextureImage_Season5;
-        private const string TCSTextureImageName_Season5 = "TCS_Season5";
-
-        private ScaledTexture LabelRPMDeafult_Release;
-        private const string LabelRPMDefaultDict_Release = "!TDUSCReleaseHUDBackground";
-        private const string LabelRPMDefaultName_Release = "rpm_9000";
-
-        private ScaledTexture HeadlightHUD_Season5;
-        private const string HeadlightHUD_Dict_Season5 = "!TDUSCReleaseHUDBackground";
-        private const string HeadlightHUD_Name_Season5 = "Lighting";
-
-        private ScaledTexture TurnSignalLeftDemo;
-        private const string TurnSignalLeftDemo_Dict = "!TDUSCDemoHUDBackground";
-        private const string TurnSignalLeftDemo_Name = "TurnLeft";
-        private bool TurnSignalLeftDemo_Enabled;
-
-        private ScaledTexture TurnSignalRightDemo;
-        private const string TurnSignalRightDemo_Dict = "!TDUSCDemoHUDBackground";
-        private const string TurnSignalRightDemo_Name = "TurnRight";
-        private bool TurnSignalRightDemo_Enabled;
 
         private ScaledTexture TurnSignalLeft;
-        private const string TurnSignalLeft_Dict = "!TDUSCReleaseHUDBackground";
-        private const string TurnSignalLeft_Name = "turnleft";
-        private bool TurnSignalLeftRelease_Enabled;
 
         private ScaledTexture TurnSignalRight;
-        private const string TurnSignalRight_Dict = "!TDUSCReleaseHUDBackground";
-        private const string TurnSignalRight_Name = "turnright";
-        private bool TurnSignalRightRelease_Enabled;
+
+        private ScaledTexture RevEngineOffImage;
+
+        private ScaledTexture HeadlightsImage;
+
+        private ScaledTexture ThrottleImageHUD;
+        private ScaledTexture BrakeImageHUD;
+
+        private bool TurnSignalLeft_Enabled;
+
+        private bool TurnSignalRight_Enabled;
 
         // Set LabelRPM
         private ScaledTexture LabelRPMDeafult;
-        private const string LabelRPMDefaultDict = "!TDUSCDemoHUDBackground";
         private const string LabelRPMDefaultName = "rpm_9000";
 
         private ScaledTexture LabelRPM_2000;
@@ -389,63 +248,6 @@ namespace TDUSCSpeedometerGTAV
         private const string LabelRPM_18000_Name = "rpm_18000";
         private const string LabelRPM_19000_Name = "rpm_19000";
 
-
-        private ScaledTexture LabelRPM_2000_Release;
-        private ScaledTexture LabelRPM_2200_Release;
-        private ScaledTexture LabelRPM_2400_Release;
-        private ScaledTexture LabelRPM_2600_Release;
-        private ScaledTexture LabelRPM_2800_Release;
-        private ScaledTexture LabelRPM_3000_Release;
-        private ScaledTexture LabelRPM_4000_Release;
-        private ScaledTexture LabelRPM_4500_Release;
-        private ScaledTexture LabelRPM_5000_Release;
-        private ScaledTexture LabelRPM_5200_Release;
-        private ScaledTexture LabelRPM_5400_Release;
-        private ScaledTexture LabelRPM_5600_Release;
-        private ScaledTexture LabelRPM_5800_Release;
-        private ScaledTexture LabelRPM_6000_Release;
-        private ScaledTexture LabelRPM_6200_Release;
-        private ScaledTexture LabelRPM_6400_Release;
-        private ScaledTexture LabelRPM_6600_Release;
-        private ScaledTexture LabelRPM_6800_Release;
-        private ScaledTexture LabelRPM_7000_Release;
-        private ScaledTexture LabelRPM_7200_Release;
-        private ScaledTexture LabelRPM_7400_Release;
-        private ScaledTexture LabelRPM_7600_Release;
-        private ScaledTexture LabelRPM_7800_Release;
-        private ScaledTexture LabelRPM_8000_Release;
-        private ScaledTexture LabelRPM_8200_Release;
-        private ScaledTexture LabelRPM_8400_Release;
-        private ScaledTexture LabelRPM_8600_Release;
-        private ScaledTexture LabelRPM_8800_Release;
-        private ScaledTexture LabelRPM_9000_Release;
-        private ScaledTexture LabelRPM_9200_Release;
-        private ScaledTexture LabelRPM_9400_Release;
-        private ScaledTexture LabelRPM_9600_Release;
-        private ScaledTexture LabelRPM_9800_Release;
-        private ScaledTexture LabelRPM_10000_Release;
-        private ScaledTexture LabelRPM_10500_Release;
-        private ScaledTexture LabelRPM_11000_Release;
-        private ScaledTexture LabelRPM_11500_Release;
-        private ScaledTexture LabelRPM_12000_Release;
-        private ScaledTexture LabelRPM_12500_Release;
-        private ScaledTexture LabelRPM_13000_Release;
-        private ScaledTexture LabelRPM_13500_Release;
-        private ScaledTexture LabelRPM_14000_Release;
-        private ScaledTexture LabelRPM_14500_Release;
-        private ScaledTexture LabelRPM_15000_Release;
-        private ScaledTexture LabelRPM_15500_Release;
-        private ScaledTexture LabelRPM_16000_Release;
-        private ScaledTexture LabelRPM_16500_Release;
-        private ScaledTexture LabelRPM_17000_Release;
-        private ScaledTexture LabelRPM_18000_Release;
-        private ScaledTexture LabelRPM_19000_Release;
-
-
-        private ScaledTexture RevEngineOffImage_Release;
-        private const string RevEngineOffImageDict_Release = "!TDUSCReleaseHUDRev";
-        private const string RevEngineOffImageName_Release = "rev_0000";
-
         private int isUnitsLanguage;
 
         private float isSwitchUnits;
@@ -530,7 +332,23 @@ namespace TDUSCSpeedometerGTAV
         private Dictionary<string, CarData> carNamesDict = new Dictionary<string, CarData>(StringComparer.OrdinalIgnoreCase);
         private int lastVehicleHandle = 0;
 
+        private string activeTextureKMHLanguageName;
+        private string activeTextureMPHLanguageName;
+        private List<string> ImageKMHLanguage = new List<string> { "kmh" ,"kmh_DenmarkNorway","kmh_Nederlands","kmh_Russian","kmh_Turkish","kmh_Ukriane","kmh_Vietnam"};
+        private List<string> ImageMPHLanguage = new List<string> { "mph", "mph", "mph_Nederlands", "mph_Russian", "mph_Turkish", "mph_Ukriane", "mph_Vietnam" };
 
+        // 2. ชุดข้อมูลชื่อไฟล์ .ytd (Texture Dictionary) ที่เรียงลำดับให้ตรงกัน
+        private List<string> textureDicts = new List<string> { "tdu_demo_dict", "tdu_release_dict", "tdu_season5_dict" };
+
+        private List<string> ImageUseKMHSettings = new List<string> { "KM/H", "MPH"};
+
+        private string activeUseKMH;
+
+        private bool isDriftHUD;
+
+        private int headlightToggle;
+
+        private bool isHUDThrottleAndBrakeSeason5;
         public TDUSCSpeedoGTAV()
         {
             LoadConfigData();
@@ -551,247 +369,316 @@ namespace TDUSCSpeedometerGTAV
             UseKMH = config.GetValue<int>("Units_Settings", "UseKMH", UseKMH);
             isUnitsLanguage = config.GetValue<int>("Units_Settings", "LanguageUnits", isUnitsLanguage);
 
-            _menuPool = new MenuPool();
-            _mainMenu = new UIMenu("TDUSCSpeedoV", "Version " + version + " by " + credits);
+            _menuPool = new ObjectPool();
+            _mainMenu = new NativeMenu("TDUSCSpeedoV", "Version " + version + " by " + credits);
             _menuPool.Add(_mainMenu);
 
             // 2. Create the Checkbox Item (Boolean toggle)
-            UIMenuCheckboxItem modEnabledHUD = new UIMenuCheckboxItem("Mod Enabled", isMainHUDModEnabled, "Mod Show and Hide HUD for Test Drive Unlimited Solar Crown Speedometer");
-            UIMenuCheckboxItem ABSToggle = new UIMenuCheckboxItem("ABS HUD", isABSHUD);
-            UIMenuCheckboxItem TCSToggle = new UIMenuCheckboxItem("TCS HUD", isTCSHUD);
+            NativeCheckboxItem modEnabledHUD = new NativeCheckboxItem("Mod Enabled", "Mod Show and Hide HUD for Test Drive Unlimited Solar Crown Speedometer" , isMainHUDModEnabled);
+            NativeCheckboxItem ABSToggle = new NativeCheckboxItem("ABS HUD", isABSHUD);
+            NativeCheckboxItem TCSToggle = new NativeCheckboxItem("TCS HUD", isTCSHUD);
 
-            var itemsListUnits = new List<dynamic> { "Imperial", "Metric" };
-            var UnitsListItem = new UIMenuListItem("Units", itemsListUnits, UseKMH, "Metric = KM/H\nImperial = MPH");
+            var itemsListUnits = new List<string> { "Imperial", "Metric" };
+            NativeListItem<string> UnitsListItem = new NativeListItem<string>("Units","Metric = KM/H\nImperial = MPH",itemsListUnits.ToArray());
+            UnitsListItem.SelectedIndex = UseKMH; // ตั้งค่าตำแหน่งเริ่มต้น
 
-            var itemsListLanguage = new List<dynamic> { "Default", "Denmark / Norway", "Nederlands", "Russian", "Turkish", "Ukriane", "Vietnamese" };
-            var LanguageListItem = new UIMenuListItem("Language Units", itemsListLanguage, isUnitsLanguage, "Select Language for KM/H or MPH");
+            // --- สั่งโหลดไฟล์ .ytd เพียงก้อนเดียวไว้ล่วงหน้าตั้งแต่ม็อดเริ่มทำงาน ---
+     //       Function.Call(Hash.REQUEST_STREAMED_TEXTURE_DICT, HUDBackground, false);
 
-            var itemsListVersionHUD = new List<dynamic> { "Demo", "Release" , "Season 5 V1"};
-            var VersionHUDListItem = new UIMenuListItem("Version HUD", itemsListVersionHUD, SelectVersionHUD, "Select HUD");
 
-            UIMenuItem selectDebugShowSubtitles = new UIMenuItem("Show Debug Name Cars");
+            var itemsListVersionHUD = new List<string> { "Demo", "Release", "Season 5 V1" , "Season 5 V2" };
+            NativeListItem<string> VersionHUDListItem = new NativeListItem<string>("Version HUD","Select HUD",itemsListVersionHUD.ToArray());
             
-            
+            VersionHUDListItem.SelectedIndex = SelectVersionHUD;
+
+            NativeItem selectDebugShowSubtitles = new NativeItem("Show Debug Name Cars");
+
+            var itemsListLanguage = new List<string> { "Default", "Denmark / Norway", "Nederlands", "Russian", "Turkish", "Ukriane", "Vietnamese" };
+            NativeListItem<string> LanguageListItem = new NativeListItem<string>("Language Units", "Select Language for KM/H or MPH", itemsListLanguage.ToArray());
+            LanguageListItem.SelectedIndex = isUnitsLanguage;
+
             // 3. Add the checkbox to the menu
-            _mainMenu.AddItem(modEnabledHUD);
-            _mainMenu.AddItem(VersionHUDListItem);
-            _mainMenu.AddItem(UnitsListItem);
-            _mainMenu.AddItem(LanguageListItem);
-            _mainMenu.AddItem(ABSToggle);
-            _mainMenu.AddItem(TCSToggle);
-            _mainMenu.AddItem(selectDebugShowSubtitles);
+            _mainMenu.Add(modEnabledHUD);
+            _mainMenu.Add(VersionHUDListItem);
+            _mainMenu.Add(UnitsListItem);
+            _mainMenu.Add(LanguageListItem);
+            _mainMenu.Add(ABSToggle);
+            _mainMenu.Add(TCSToggle);
+            _mainMenu.Add(selectDebugShowSubtitles);
 
-            _mainMenu.OnItemSelect += (sender, selectedItem, index) =>
+
+            VersionHUDListItem.ItemChanged += (sender, e) =>
             {
-                if (selectedItem == selectDebugShowSubtitles)
+                if (VersionHUDListItem.SelectedIndex == 0)
                 {
-                    Ped playerPed = Game.Player.Character;
-
-                    // 1. ตรวจสอบก่อนว่าตัวละครผู้เล่นมีตัวตนอยู่ในเกมจริงไหม
-                    if (playerPed.Exists())
-                    {
-                        GTA.UI.Screen.ShowSubtitle("Vehicle Exited");
-                        // 2. ตรวจสอบว่าผู้เล่นนั่งอยู่ "ในรถ" เรียบร้อยแล้ว
-                        if (playerPed.IsInVehicle())
-                        {
-
-                            Vehicle currentVehicle = Game.Player.Character.CurrentVehicle;
-                            // 1. ดึงชื่อ Spawn Name แท้ๆ (ตัวพิมพ์เล็ก) ที่เราใช้เสกรถ (เช่น "comet2", "one") จากคลาส Model โดยตรง
-                            string modelName = currentVehicle.Model.ToString().Replace(" ", "").ToLower();
-
-                            // 2. ดักทางเผื่อเหนียว: หาก SHVDN3 ดึงไม่ออกแล้วพ่นเลขฐานสิบหก 0x ออกมาแทน ให้สลับไปใช้ Native API
-                            if (modelName.StartsWith("0x"))
-                            {
-                                modelName = Function.Call<string>((Hash)0xB215AAC32D25D019, currentVehicle.Model.Hash).Replace(" ", "").ToLower();
-                            }
-
-                            // 3. ค้นหาใน Dictionary เพื่อดึงคลาส CarData ออกมา
-                            if (carNamesDict.TryGetValue(modelName, out CarData car))
-                            {
-                                GTA.UI.Screen.ShowSubtitle($"Vehicle Name: {car.DisplayName}\nVehicle Spawn : {modelName}\nSet RPM : {car.DisplayMaxRPM}" , 3000);
-                            }
-                            else
-                            {
-                                GTA.UI.Screen.ShowSubtitle($"Vehicle Name: Not Found in {configPath}\nVehicle Spawn : {modelName}\nSet RPM : {SetRPM}" , 3000);
-                            }
-                        }
-                        else // ❌ เงื่อนไข "else" ตรงนี้จะทำงานเมื่อผู้เล่นเท้าแตะพื้น (ไม่ได้อยู่ในรถ)
-                        {
-                            // รีเซ็ตค่า Handle เพื่อให้เวลาขึ้นรถคันเดิมซ้ำ ระบบยังโชว์ชื่อรถให้ใหม่
-                            lastVehicleHandle = 0;
-                        }
-                    }
+                    isDriftHUD = true;
+                    config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
+                    config.Save();
+                    HUDBackground = "!TDUSCDemoHUDBackground";
+                    BackgroundTextureName = "background";
+                    HUDABS = "ABS";
+                    HUDTCS = "TCS";
+                    HUDSpeed = "!TDUSCDemoHUDSpeed";
+                    HUDGear = "!TDUSCDemoHUDGear";
+                    HUDHandbrake = "Parking_Brake";
+                    HUDTurnSignalLeft = "TurnLeft";
+                    HUDTurnSignalRight = "TurnRight";
+                    HUDRev = "!TDUSCDemoHUDRev";
+                    headlightToggle = 0;
+                    isHUDThrottleAndBrakeSeason5 = false;
+                }
+                if (VersionHUDListItem.SelectedIndex == 1)
+                {
+                    isDriftHUD = false;
+                    config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
+                    config.Save();
+                    HUDBackground = "!TDUSCReleaseHUDBackground";
+                    BackgroundTextureName = "background";
+                    HUDABS = "ABS";
+                    HUDTCS = "TCS";
+                    HUDSpeed = "!TDUSCReleaseHUDSpeed";
+                    HUDGear = "!TDUSCReleaseHUDGear";
+                    HUDHandbrake = "handbrake";
+                    HUDTurnSignalLeft = "turnleft";
+                    HUDTurnSignalRight = "turnright";
+                    HUDRev = "!TDUSCReleaseHUDRev";
+                    headlightToggle = 0;
+                    isHUDThrottleAndBrakeSeason5 = false;
+                }
+                if (VersionHUDListItem.SelectedIndex == 2)
+                {
+                    isDriftHUD = false;
+                    config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
+                    config.Save();
+                    HUDBackground = "!TDUSCReleaseHUDBackground";
+                    BackgroundTextureName = "background_Season5_V1";
+                    HUDABS = "ABS_Season5";
+                    HUDTCS = "TCS_Season5";
+                    HUDSpeed = "!TDUSCReleaseHUDSpeed";
+                    HUDGear = "!TDUSCReleaseHUDGearSeason5";
+                    HUDHandbrake = "handbrake";
+                    HUDTurnSignalLeft = "turnleft";
+                    HUDTurnSignalRight = "turnright";
+                    HUDRev = "!TDUSCReleaseHUDRevSeason5";
+                    headlightToggle = 255;
+                    isHUDThrottleAndBrakeSeason5 = false;
+                }
+                if (VersionHUDListItem.SelectedIndex == 3)
+                {
+                    isDriftHUD = false;
+                    config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 3);
+                    config.Save();
+                    HUDBackground = "!TDUSCReleaseHUDBackground";
+                    BackgroundTextureName = "background_Season5_V2";
+                    HUDABS = "ABS_Season5";
+                    HUDTCS = "TCS_Season5";
+                    HUDSpeed = "!TDUSCReleaseHUDSpeed";
+                    HUDGear = "!TDUSCReleaseHUDGearSeason5";
+                    HUDHandbrake = "handbrake";
+                    HUDTurnSignalLeft = "turnleft";
+                    HUDTurnSignalRight = "turnright";
+                    HUDRev = "!TDUSCReleaseHUDRev";
+                    headlightToggle = 255;
+                    isHUDThrottleAndBrakeSeason5 = true;
                 }
             };
-            // 4. Hook up the If/Else logic to the event
-            _mainMenu.OnCheckboxChange += (sender, item, Checked) =>
+            UnitsListItem.ItemChanged += (sender, e) =>
             {
-                if (item == modEnabledHUD)
+                int currentIndex = UnitsListItem.SelectedIndex;
+
+                activeUseKMH = ImageUseKMHSettings[currentIndex];
+
+                UseKMH = currentIndex;
+                switch(currentIndex)
                 {
-                    if (Checked)
-                    {
-                        isMainHUDModEnabled = true;
-                        config.SetValue<bool>("HUD_SETTINGS", "Mod_Enabled", true);
+                    case 1:
+                        isSwitchUnits = speedKMH;
+                        isKMH = true;
+                        isMPH = false;
+                        config.SetValue<int>("Units_Settings", "UseKMH", 1);
                         config.Save();
-                    }
-                    else
-                    {
-                        isMainHUDModEnabled = false;
-                        config.SetValue<bool>("HUD_SETTINGS", "Mod_Enabled", false);
+                        break;
+                    case 0:
+                        isSwitchUnits = speedMPH;
+                        isKMH = false;
+                        isMPH = true;
+                        config.SetValue<int>("Units_Settings", "UseKMH", 0);
                         config.Save();
-                    }
+                        break;
                 }
-                if (item == ABSToggle)
-                {
-                    if (Checked)
-                    {
-                        isABSHUD = true;
-                        config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", true);
-                        config.Save();
-                    }
-                    else
-                    {
-                        isABSHUD = false;
-                        config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", false);
-                        config.Save();
-                    }
-                }
-                if (item == TCSToggle)
-                {
-                    if (Checked)
-                    {
-                        isTCSHUD = true;
-                        config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", true);
-                        config.Save();
-                    }
-                    else
-                    {
-                        isTCSHUD = false;
-                        config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", false);
-                        config.Save();
-                    }
-                }
+
             };
-            _mainMenu.OnListChange += (sender, item, index) =>
+
+            LanguageListItem.ItemChanged += (sender, e) =>
             {
-                if (item == UnitsListItem)
-                {
-                    // ทำงานทันทีเมื่อเปลี่ยนตัวเลือก (แสดงข้อความแจ้งเตือนมุมซ้าย)
+                int currentIndex = LanguageListItem.SelectedIndex;
+                isUnitsLanguage = LanguageListItem.SelectedIndex;
 
-                    switch (index)
-                    {
 
-                        case 0:
-                            // MPH
-                            isSwitchUnits = speedMPH;
-                            isKMH = false;
-                            isMPH = true;
-                            config.SetValue<int>("Units_Settings", "UseKMH", 0);
-                            config.Save();
-                            break;
-                        case 1:
-                            // KM/H
-                            isSwitchUnits = speedKMH;
-                            isKMH = true;
-                            isMPH = false;
-                            config.SetValue<int>("Units_Settings", "UseKMH", 1);
-                            config.Save();
-                            break;
-                    }
-                }
-
-                if (item == LanguageListItem)
-                {
-                    isUnitsLanguage = index;
-
-                    switch (index)
-                    {
-                        case 0:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 0);
-                            config.Save();
-                            break;
-                        case 1:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 1);
-                            config.Save();
-                            break;
-                        case 2:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 2);
-                            config.Save();
-                            break;
-                        case 3:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 3);
-                            config.Save();
-                            break;
-                        case 4:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 4);
-                            config.Save();
-                            break;
-                        case 5:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 5);
-                            config.Save();
-                            break;
-                        case 6:
-                            config.SetValue<int>("Units_Settings", "LanguageUnits", 6);
-                            config.Save();
-                            break;
-                    }
-                }
-
-                if (item == VersionHUDListItem)
-                {
-                    SelectVersionHUD = index;
-
-                    switch (index)
-                    {
-                        case 0:
-                            HUD_Demo = true;
-                            HUD_Release = false;
-                            HUD_Season5V1 = false;
-                            config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
-                            config.Save();
-                            break;
-                        case 1:
-                            HUD_Demo = false;
-                            HUD_Release = true;
-                            HUD_Season5V1 = false;
-                            config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
-                            config.Save();
-                            break;
-                        case 2:
-                            HUD_Demo = false;
-                            HUD_Release = false;
-                            HUD_Season5V1 = true;
-                            config.SetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
-                            config.Save();
-                            break;
-                    }
-
-                }
-            };
+                // อัปเดตเปลี่ยนเฉพาะค่า "Texture Name" ไปตามลำดับที่เลือก
+                activeTextureKMHLanguageName = ImageKMHLanguage[currentIndex];
+                ImageKMH.Texture = activeTextureKMHLanguageName;
                 
-            _mainMenu.OnItemSelect += (sender, selectedItem, index) =>
+                activeTextureMPHLanguageName = ImageMPHLanguage[currentIndex];
+                ImageMPH.Texture = activeTextureMPHLanguageName;
+                
+                switch (currentIndex)
+                {
+                    case 0:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 0);
+                        config.Save();
+                        break;
+                    case 1:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 1);
+                        config.Save();
+                        break;
+                    case 2:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 2);
+                        config.Save();
+                        break;
+                    case 3:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 3);
+                        config.Save();
+                        break;
+                    case 4:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 4);
+                        config.Save();
+                        break;
+                    case 5:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 5);
+                        config.Save();
+                        break;
+                    case 6:
+                        config.SetValue<int>("Units_Settings", "LanguageUnits", 6);
+                        config.Save();
+                        break;
+                }
+            };
+            modEnabledHUD.CheckboxChanged += (sender, e) =>
             {
-                // Button Only
+                bool Enabled = modEnabledHUD.Checked;
+                if (Enabled)
+                {
+                    isMainHUDModEnabled = true;
+                }
+                else
+                {
+                    isMainHUDModEnabled = false;
+                }
+            };
+            ABSToggle.CheckboxChanged += (sender, e) =>
+            {
+                bool Enabled = ABSToggle.Checked;
+                if(Enabled)
+                {
+                    isABSHUD = true;
+                    config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", true);
+                    config.Save();
+                }
+                else
+                {
+                    isABSHUD = false;
+                    config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", false);
+                    config.Save();
+                }
+            };
+            TCSToggle.CheckboxChanged += (sender, e) =>
+            {
+                bool Enabled = TCSToggle.Checked;
+                if(Enabled)
+                {
+                    isTCSHUD = true;
+                    config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", true);
+                    config.Save();
+                }
+                else
+                {
+                    isTCSHUD = false;
+                    config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", false);
+                    config.Save();
+                }
+            };
+            selectDebugShowSubtitles.Activated += (sender, e) =>
+            {
+                Ped playerPed = Game.Player.Character;
+
+                // 1. ตรวจสอบก่อนว่าตัวละครผู้เล่นมีตัวตนอยู่ในเกมจริงไหม
+                if (playerPed.Exists())
+                {
+                    GTA.UI.Screen.ShowSubtitle("Vehicle Exited");
+                    // 2. ตรวจสอบว่าผู้เล่นนั่งอยู่ "ในรถ" เรียบร้อยแล้ว
+                    if (playerPed.IsInVehicle())
+                    {
+
+                        Vehicle currentVehicle = Game.Player.Character.CurrentVehicle;
+                        // 1. ดึงชื่อ Spawn Name แท้ๆ (ตัวพิมพ์เล็ก) ที่เราใช้เสกรถ (เช่น "comet2", "one") จากคลาส Model โดยตรง
+                        string modelName = currentVehicle.Model.ToString().Replace(" ", "").ToLower();
+
+                        // 2. ดักทางเผื่อเหนียว: หาก SHVDN3 ดึงไม่ออกแล้วพ่นเลขฐานสิบหก 0x ออกมาแทน ให้สลับไปใช้ Native API
+                        if (modelName.StartsWith("0x"))
+                        {
+                            modelName = Function.Call<string>((Hash)0xB215AAC32D25D019, currentVehicle.Model.Hash).Replace(" ", "").ToLower();
+                        }
+
+                        // 3. ค้นหาใน Dictionary เพื่อดึงคลาส CarData ออกมา
+                        if (carNamesDict.TryGetValue(modelName, out CarData car))
+                        {
+                            GTA.UI.Screen.ShowSubtitle($"Vehicle Name: {car.DisplayName}\nVehicle Spawn : {modelName}\nMax RPM : {car.DisplayMaxRPM}", 3000);
+                        }
+                        else
+                        {
+                            GTA.UI.Screen.ShowSubtitle($"Vehicle Name: Not Found in {configPath}\nVehicle Spawn : {modelName}\nMax RPM : {SetRPM}", 3000);
+                        }
+                    }
+                    else // ❌ เงื่อนไข "else" ตรงนี้จะทำงานเมื่อผู้เล่นเท้าแตะพื้น (ไม่ได้อยู่ในรถ)
+                    {
+                        // รีเซ็ตค่า Handle เพื่อให้เวลาขึ้นรถคันเดิมซ้ำ ระบบยังโชว์ชื่อรถให้ใหม่
+                        lastVehicleHandle = 0;
+                    }
+                }
             };
 
             Tick += OnTick;
             KeyUp += OnKeyDown;
 
-            switch (UseKMH)
+            // ระบบอ่านโหลดเซฟ
+            switch (SelectVersionHUD)
             {
-                case 1:
-                    isSwitchUnits = 3.6f;
-                    isKMH = true;
-                    isMPH = false;
-                    break;
-
                 case 0:
-                    isSwitchUnits = 2.236936f;
-                    isKMH = false;
-                    isMPH = true;
+                    isDriftHUD = true;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
+                    break;
+                case 1:
+                    isDriftHUD = false;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
+                    break;
+                case 2:
+                    isDriftHUD = false;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
+                    break;
+                case 3:
+                    isDriftHUD = false;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 3);
                     break;
             }
 
+            switch (UseKMH)
+            {
+                case 1:
+                    isSwitchUnits = speedKMH;
+                    isKMH = true;
+                    isMPH = false;
+                    config.GetValue<int>("Units_Settings", "UseKMH", 1);
+                    break;
+
+                case 0:
+                    isSwitchUnits = speedMPH;
+                    isKMH = false;
+                    isMPH = true;
+                    config.GetValue<int>("Units_Settings", "UseKMH", 0);
+                    break;
+            }
+            
             switch (isABSHUD)
             {
                 case true:
@@ -818,266 +705,299 @@ namespace TDUSCSpeedometerGTAV
             switch (SelectVersionHUD)
             {
                 case 0:
-                    HUD_Demo = true;
-                    HUD_Release = false;
-                    HUD_Season5V1 = false;
+                    isDriftHUD = true;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
+                    HUDBackground = "!TDUSCDemoHUDBackground";
+                    BackgroundTextureName = "background";
+                    HUDABS = "ABS";
+                    HUDTCS = "TCS";
+                    HUDSpeed = "!TDUSCDemoHUDSpeed";
+                    HUDGear = "!TDUSCDemoHUDGear";
+                    HUDHandbrake = "Parking_Brake";
+                    HUDTurnSignalLeft = "TurnLeft";
+                    HUDTurnSignalRight = "TurnRight";
+                    HUDRev = "!TDUSCDemoHUDRev";
+                    headlightToggle = 0;
+                    isHUDThrottleAndBrakeSeason5 = false;
                     break;
                 case 1:
-                    HUD_Demo = false;
-                    HUD_Release = true;
-                    HUD_Season5V1 = false;
+                    isDriftHUD = false;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
+                    HUDBackground = "!TDUSCReleaseHUDBackground";
+                    BackgroundTextureName = "background";
+                    HUDABS = "ABS";
+                    HUDTCS = "TCS";
+                    HUDSpeed = "!TDUSCReleaseHUDSpeed";
+                    HUDGear = "!TDUSCReleaseHUDGear";
+                    HUDHandbrake = "handbrake";
+                    HUDTurnSignalLeft = "turnleft";
+                    HUDTurnSignalRight = "turnright";
+                    HUDRev = "!TDUSCReleaseHUDRev";
+                    headlightToggle = 0;
+                    isHUDThrottleAndBrakeSeason5 = false;
                     break;
                 case 2:
-                    HUD_Demo = false;
-                    HUD_Release = false;
-                    HUD_Season5V1 = true;
+                    isDriftHUD = false;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
+                    HUDBackground = "!TDUSCReleaseHUDBackground";
+                    BackgroundTextureName = "background_Season5_V1";
+                    HUDABS = "ABS_Season5";
+                    HUDTCS = "TCS_Season5";
+                    HUDSpeed = "!TDUSCReleaseHUDSpeed";
+                    HUDGear = "!TDUSCReleaseHUDGearSeason5";
+                    HUDHandbrake = "handbrake";
+                    HUDTurnSignalLeft = "turnleft";
+                    HUDTurnSignalRight = "turnright";
+                    HUDRev = "!TDUSCReleaseHUDRevSeason5";
+                    headlightToggle = 255;
+                    isHUDThrottleAndBrakeSeason5 = false;
+                    break;
+                case 3:
+                    isDriftHUD = false;
+                    config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 3);
+                    HUDBackground = "!TDUSCReleaseHUDBackground";
+                    BackgroundTextureName = "background_Season5_V2";
+                    HUDABS = "ABS_Season5";
+                    HUDTCS = "TCS_Season5";
+                    HUDSpeed = "!TDUSCReleaseHUDSpeed";
+                    HUDGear = "!TDUSCReleaseHUDGearSeason5";
+                    HUDHandbrake = "handbrake";
+                    HUDTurnSignalLeft = "turnleft";
+                    HUDTurnSignalRight = "turnright";
+                    HUDRev = "!TDUSCReleaseHUDRev";
+                    headlightToggle = 255;
+                    isHUDThrottleAndBrakeSeason5 = true;
+                    break;
+            }
+            
+            switch (isUnitsLanguage)
+            {
+                case 0:
+                    activeTextureKMHLanguageName = "kmh";
+                    activeTextureMPHLanguageName = "mph";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 0);
+                    break;
+                case 1:
+                    activeTextureKMHLanguageName = "kmh_DenmarkNorway";
+                    activeTextureMPHLanguageName = "mph";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 1);
+                    break;
+                case 2:
+                    activeTextureKMHLanguageName = "kmh_Nederlands";
+                    activeTextureMPHLanguageName = "mph_Nederlands";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 2);
+                    break;
+                case 3:
+                    activeTextureKMHLanguageName = "kmh_Russian";
+                    activeTextureMPHLanguageName = "mph_Russian";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 3);
+                    break;
+                case 4:
+                    activeTextureKMHLanguageName = "kmh_Turkish";
+                    activeTextureMPHLanguageName = "mph_Turkish";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 4);
+                    break;
+                case 5:
+                    activeTextureKMHLanguageName = "kmh_Ukriane";
+                    activeTextureMPHLanguageName = "mph_Ukriane";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 5);
+                    break;
+                case 6:
+                    activeTextureKMHLanguageName = "kmh_Vietnam";
+                    activeTextureMPHLanguageName = "mph_Vietnam";
+                    config.GetValue<int>("Units_Settings", "LanguageUnits", 6);
                     break;
             }
 
             // Demo HUD
-            BackgroundTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict, BackgroundTextureName);
-            BackgroundTextureImage2 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict2, BackgroundTextureName2);
+            BackgroundTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, BackgroundTextureName);
+            BackgroundTextureImage2 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, BackgroundTextureName2);
 
-            ImageKMH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMHDict, ImageKMHName);
-            ImageKMH_DNKNOR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_DNKNORDict, ImageKMH_DNKNORName);
-            ImageKMH_RUS = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_RUSDict, ImageKMH_RUSName);
-            ImageKMH_TUR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_TURDict, ImageKMH_TURName);
-            ImageKMH_UKR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_UKRDict, ImageKMH_UKRName);
-            ImageKMH_VNM = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_VNDict, ImageKMH_VNName);
-            ImageKMH_NLD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_NLDDict, ImageKMH_NLDName);
+            ImageKMH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, activeTextureKMHLanguageName);
+            
+            ImageMPH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, activeTextureMPHLanguageName);
 
-            ImageMPH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPHDict, ImageMPHName);
-            ImageMPH_NLD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_NLDDict, ImageMPH_NLDName);
-            ImageMPH_RUS = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_RUSDict, ImageMPH_RUSName);
-            ImageMPH_TUR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_TURDict, ImageMPH_TURName);
-            ImageMPH_UKR = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_UKRDict, ImageMPH_UKRName);
-            ImageMPH_VNM = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_VNMDict, ImageMPH_VNMName);
+            DriftTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, DriftTextureName);
 
-            DriftTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), DriftTextureDict, DriftTextureName);
+            HandbrakeTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HandbrakeTextureName);
 
-            HandbrakeTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HandbrakeTextireDict, HandbrakeTextureName);
+            speedTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDSpeed, "speed_0000");
 
-            speedTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), SpeedTextureDict, "speed_0000");
-
-            RevTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevTextureDict, "rev_0000");
+            RevTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDRev, "rev_0000");
 
 
-            LabelRPMDeafult = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPMDefaultName);
-            LabelRPM_2000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_2000_Name);
-            LabelRPM_2200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_2200_Name);
-            LabelRPM_2400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_2400_Name);
-            LabelRPM_2600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_2600_Name);
-            LabelRPM_2800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_2800_Name);
-            LabelRPM_3000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_3000_Name);
-            LabelRPM_4000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_4000_Name);
-            LabelRPM_4500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_4500_Name);
-            LabelRPM_5000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_5000_Name);
-            LabelRPM_5200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_5200_Name);
-            LabelRPM_5400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_5400_Name);
-            LabelRPM_5600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_5600_Name);
-            LabelRPM_5800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_5800_Name);
-            LabelRPM_6000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_6000_Name);
-            LabelRPM_6200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_6200_Name);
-            LabelRPM_6400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_6400_Name);
-            LabelRPM_6600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_6600_Name);
-            LabelRPM_6800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_6800_Name);
-            LabelRPM_7000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_7000_Name);
-            LabelRPM_7200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_7200_Name);
-            LabelRPM_7400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_7400_Name);
-            LabelRPM_7600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_7600_Name);
-            LabelRPM_7800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_7800_Name);
-            LabelRPM_8000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_8000_Name);
-            LabelRPM_8200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_8200_Name);
-            LabelRPM_8400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_8400_Name);
-            LabelRPM_8600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_8600_Name);
-            LabelRPM_8800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_8800_Name);
-            LabelRPM_9000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_9000_Name);
-            LabelRPM_9200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_9200_Name);
-            LabelRPM_9400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_9400_Name);
-            LabelRPM_9600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_9600_Name);
-            LabelRPM_9800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_9800_Name);
-            LabelRPM_10000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_10000_Name);
-            LabelRPM_10500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_10500_Name);
-            LabelRPM_11000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_11000_Name);
-            LabelRPM_11500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_11500_Name);
-            LabelRPM_12000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_12000_Name);
-            LabelRPM_12500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_12500_Name);
-            LabelRPM_13000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_13000_Name);
-            LabelRPM_13500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_13500_Name);
-            LabelRPM_14000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_14000_Name);
-            LabelRPM_14500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_14500_Name);
-            LabelRPM_15000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_15000_Name);
-            LabelRPM_15500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_15500_Name);
-            LabelRPM_16000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_16000_Name);
-            LabelRPM_16500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_16500_Name);
-            LabelRPM_17000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_17000_Name);
-            LabelRPM_18000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_18000_Name);
-            LabelRPM_19000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict, LabelRPM_19000_Name);
+            LabelRPMDeafult = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPMDefaultName);
+            
+            LabelRPM_2000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2000_Name);
+            LabelRPM_2200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2200_Name);
+            LabelRPM_2400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2400_Name);
+            LabelRPM_2600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2600_Name);
+            LabelRPM_2800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2800_Name);
+            LabelRPM_3000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_3000_Name);
+            LabelRPM_4000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_4000_Name);
+            LabelRPM_4500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_4500_Name);
+            LabelRPM_5000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_5000_Name);
+            LabelRPM_5200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_5200_Name);
+            LabelRPM_5400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_5400_Name);
+            LabelRPM_5600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_5600_Name);
+            LabelRPM_5800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_5800_Name);
+            LabelRPM_6000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_6000_Name);
+            LabelRPM_6200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_6200_Name);
+            LabelRPM_6400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_6400_Name);
+            LabelRPM_6600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_6600_Name);
+            LabelRPM_6800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_6800_Name);
+            LabelRPM_7000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_7000_Name);
+            LabelRPM_7200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_7200_Name);
+            LabelRPM_7400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_7400_Name);
+            LabelRPM_7600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_7600_Name);
+            LabelRPM_7800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_7800_Name);
+            LabelRPM_8000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_8000_Name);
+            LabelRPM_8200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_8200_Name);
+            LabelRPM_8400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_8400_Name);
+            LabelRPM_8600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_8600_Name);
+            LabelRPM_8800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_8800_Name);
+            LabelRPM_9000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_9000_Name);
+            LabelRPM_9200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_9200_Name);
+            LabelRPM_9400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_9400_Name);
+            LabelRPM_9600 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_9600_Name);
+            LabelRPM_9800 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_9800_Name);
+            LabelRPM_10000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_10000_Name);
+            LabelRPM_10500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_10500_Name);
+            LabelRPM_11000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_11000_Name);
+            LabelRPM_11500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_11500_Name);
+            LabelRPM_12000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_12000_Name);
+            LabelRPM_12500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_12500_Name);
+            LabelRPM_13000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_13000_Name);
+            LabelRPM_13500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_13500_Name);
+            LabelRPM_14000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_14000_Name);
+            LabelRPM_14500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_14500_Name);
+            LabelRPM_15000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_15000_Name);
+            LabelRPM_15500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_15500_Name);
+            LabelRPM_16000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_16000_Name);
+            LabelRPM_16500 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_16500_Name);
+            LabelRPM_17000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_17000_Name);
+            LabelRPM_18000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_18000_Name);
+            LabelRPM_19000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_19000_Name);
+            
 
+            ABSTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HUDABS);
 
-            ABSTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ABSTextureImageDict, ABSTextureImageName);
+            TCSTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HUDTCS);
 
-            TCSTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TCSTextureImageDict, TCSTextureImageName);
+            TurnSignalLeft = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HUDTurnSignalLeft);
 
-            TestEngineOff = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TestEngineOffDict, TestEngineOffName);
+            TurnSignalRight = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HUDTurnSignalRight);
 
-            TestEngineOn = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TestEngineOnDict, TestEngineOnName);
+            RevEngineOffImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDRev, "rev_0000");
 
-            RevEngineOffImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevEngineOffImageDict, RevEngineOffImageName);
+            gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
+            gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
 
-            // Release HUD
-            BackgroundTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict_Release, BackgroundTextureName_Release);
-            BackgroundTextureImage2_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict2_Release, BackgroundTextureName2_Release);
-            BackgroundTextureImage_Season5V1 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), BackgroundTextureDict_Release, BackgroundTextureName_Season5V1);
+            HeadlightsImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDBackground", "Lighting");
+            ThrottleImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalAccelerationSeason5V2", "_000");
+            BrakeImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalBrakeSeason5V2", "_000");
 
-            ImageKMH_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMHDict_Release, ImageKMHName_Release);
-            ImageKMH_DNKNOR_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_DNKNORDict_Release, ImageKMH_DNKNORName_Release);
-            ImageKMH_RUS_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_RUSDict_Release, ImageKMH_RUSName_Release);
-            ImageKMH_TUR_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_TURDict_Release, ImageKMH_TURName_Release);
-            ImageKMH_UKR_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_UKRDict_Release, ImageKMH_UKRName_Release);
-            ImageKMH_VNM_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_VNDict_Release, ImageKMH_VNName_Release);
-            ImageKMH_NLD_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageKMH_NLDDict_Release, ImageKMH_NLDName_Release);
-
-            ImageMPH_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPHDict_Release, ImageMPHName_Release);
-            ImageMPH_NLD_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_NLDDict_Release, ImageMPH_NLDName_Release);
-            ImageMPH_RUS_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_RUSDict_Release, ImageMPH_RUSName_Release);
-            ImageMPH_TUR_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_TURDict_Release, ImageMPH_TURName_Release);
-            ImageMPH_UKR_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_UKRDict_Release, ImageMPH_UKRName_Release);
-            ImageMPH_VNM_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ImageMPH_VNMDict_Release, ImageMPH_VNMName_Release);
-
-            DriftTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), DriftTextureDict_Release, DriftTextureName_Release);
-
-            HandbrakeTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HandbrakeTextireDict_Release, HandbrakeTextureName_Release);
-
-            speedTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), SpeedTextureDict_Release, "speed_0000");
-
-            RevTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevTextureDict_Release, "rev_0000");
-            RevTextureImage_Season5V1 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevTextureDict_Season5V1, "rev_0000");
-
-            LabelRPMDeafult_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPMDefaultName_Release);
-            LabelRPM_2000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_2000_Name);
-            LabelRPM_2200_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_2200_Name);
-            LabelRPM_2400_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_2400_Name);
-            LabelRPM_2600_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_2600_Name);
-            LabelRPM_2800_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_2800_Name);
-            LabelRPM_3000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_3000_Name);
-            LabelRPM_4000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_4000_Name);
-            LabelRPM_4500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_4500_Name);
-            LabelRPM_5000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_5000_Name);
-            LabelRPM_5200_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_5200_Name);
-            LabelRPM_5400_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_5400_Name);
-            LabelRPM_5600_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_5600_Name);
-            LabelRPM_5800_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_5800_Name);
-            LabelRPM_6000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_6000_Name);
-            LabelRPM_6200_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_6200_Name);
-            LabelRPM_6400_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_6400_Name);
-            LabelRPM_6600_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_6600_Name);
-            LabelRPM_6800_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_6800_Name);
-            LabelRPM_7000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_7000_Name);
-            LabelRPM_7200_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_7200_Name);
-            LabelRPM_7400_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_7400_Name);
-            LabelRPM_7600_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_7600_Name);
-            LabelRPM_7800_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_7800_Name);
-            LabelRPM_8000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_8000_Name);
-            LabelRPM_8200_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_8200_Name);
-            LabelRPM_8400_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_8400_Name);
-            LabelRPM_8600_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_8600_Name);
-            LabelRPM_8800_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_8800_Name);
-            LabelRPM_9000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_9000_Name);
-            LabelRPM_9200_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_9200_Name);
-            LabelRPM_9400_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_9400_Name);
-            LabelRPM_9600_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_9600_Name);
-            LabelRPM_9800_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_9800_Name);
-            LabelRPM_10000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_10000_Name);
-            LabelRPM_10500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_10500_Name);
-            LabelRPM_11000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_11000_Name);
-            LabelRPM_11500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_11500_Name);
-            LabelRPM_12000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_12000_Name);
-            LabelRPM_12500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_12500_Name);
-            LabelRPM_13000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_13000_Name);
-            LabelRPM_13500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_13500_Name);
-            LabelRPM_14000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_14000_Name);
-            LabelRPM_14500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_14500_Name);
-            LabelRPM_15000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_15000_Name);
-            LabelRPM_15500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_15500_Name);
-            LabelRPM_16000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_16000_Name);
-            LabelRPM_16500_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_16500_Name);
-            LabelRPM_17000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_17000_Name);
-            LabelRPM_18000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_18000_Name);
-            LabelRPM_19000_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), LabelRPMDefaultDict_Release, LabelRPM_19000_Name);
-
-            ABSTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ABSTextureImageDict_Release, ABSTextureImageName_Release);
-            ABSTextureImage_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), ABSTextureImageDict_Release, ABSTextureImageName_Season5);
-
-            TCSTextureImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TCSTextureImageDict_Release, TCSTextureImageName_Release);
-            TCSTextureImage_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TCSTextureImageDict_Release, TCSTextureImageName_Season5);
-
-            RevEngineOffImage_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), RevEngineOffImageDict_Release, RevEngineOffImageName_Release);
-
-            HeadlightHUD_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HeadlightHUD_Dict_Season5, HeadlightHUD_Name_Season5);
-
-            TurnSignalLeftDemo = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalLeftDemo_Dict, TurnSignalLeftDemo_Name);
-            TurnSignalRightDemo = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalRightDemo_Dict, TurnSignalRightDemo_Name);
-
-            TurnSignalLeft = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalLeft_Dict, TurnSignalLeft_Name);
-            TurnSignalRight = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), TurnSignalRight_Dict, TurnSignalRight_Name);
         }
         private bool categorySpeedoEnabled;
 
         private string categoryName;
 
-
         private void OnTick(object sender, EventArgs e)
         {
 
             VehicleEnterExit();
-            _menuPool.ProcessMenus();
-            TDUSC_HUDDemoTick();
+            _menuPool.Process();
+            TDUSC_HUDTick();
             VehicleSlowMotionFranklin();
 
-            string enabledtext1, enabledtext2, enabledtext3, enabledtext4;
+            BackgroundTextureImage.Dictionary = HUDBackground;
+            BackgroundTextureImage.Texture = BackgroundTextureName;
+            BackgroundTextureImage2.Dictionary = HUDBackground;
 
+            ImageKMH.Dictionary = HUDBackground;
+            ImageMPH.Dictionary = HUDBackground;
+            ABSTextureImage.Texture = HUDABS;
+            TCSTextureImage.Texture = HUDTCS;
+            HandbrakeTextureImage.Dictionary = HUDBackground;
+            HandbrakeTextureImage.Texture = HUDHandbrake;
+            DriftTextureImage.Dictionary = HUDBackground;
+            TurnSignalLeft.Texture = HUDTurnSignalLeft;
+            TurnSignalRight.Texture = HUDTurnSignalRight;
+            TurnSignalLeft.Dictionary = HUDBackground;
+            TurnSignalRight.Dictionary = HUDBackground;
+            speedTextureImage.Dictionary = HUDSpeed;
+            gearTexture.Dictionary = HUDGear;
+            gearTexture_Red.Dictionary = HUDGear;
+            RevTextureImage.Dictionary = HUDRev;
 
-            if (isMainHUDModEnabled)
-            {
-                enabledtext1 = "True";
-            }
-            else
-            {
-                enabledtext1 = "False";
-            }
+            LabelRPMDeafult.Dictionary = HUDBackground;
+            LabelRPM_2000.Dictionary = HUDBackground;          
+            LabelRPM_2200.Dictionary = HUDBackground;          
+            LabelRPM_2400.Dictionary = HUDBackground;          
+            LabelRPM_2600.Dictionary = HUDBackground;          
+            LabelRPM_2800.Dictionary = HUDBackground;          
+            LabelRPM_3000.Dictionary = HUDBackground;          
+            LabelRPM_4000.Dictionary = HUDBackground;          
+            LabelRPM_4500.Dictionary = HUDBackground;          
+            LabelRPM_5000.Dictionary = HUDBackground;          
+            LabelRPM_5200.Dictionary = HUDBackground;
+            LabelRPM_5400.Dictionary = HUDBackground;
+            LabelRPM_5600.Dictionary = HUDBackground;
+            LabelRPM_5800.Dictionary = HUDBackground;
+            LabelRPM_6000.Dictionary = HUDBackground;
+            LabelRPM_6200.Dictionary = HUDBackground;          
+            LabelRPM_6400.Dictionary = HUDBackground;          
+            LabelRPM_6600.Dictionary = HUDBackground;          
+            LabelRPM_6800.Dictionary = HUDBackground;
+            LabelRPM_7000.Dictionary = HUDBackground;
+            LabelRPM_7200.Dictionary = HUDBackground;
+            LabelRPM_7400.Dictionary = HUDBackground;
+            LabelRPM_7600.Dictionary = HUDBackground;
+            LabelRPM_7800.Dictionary = HUDBackground;
+            LabelRPM_8000.Dictionary = HUDBackground;
+            LabelRPM_8200.Dictionary = HUDBackground;
+            LabelRPM_8400.Dictionary = HUDBackground;
+            LabelRPM_8600.Dictionary = HUDBackground;
+            LabelRPM_8800.Dictionary = HUDBackground;
+            LabelRPM_9000.Dictionary = HUDBackground;
+            LabelRPM_9200.Dictionary = HUDBackground;
+            LabelRPM_9400.Dictionary = HUDBackground;
+            LabelRPM_9600.Dictionary = HUDBackground;
+            LabelRPM_9800.Dictionary = HUDBackground;
+            LabelRPM_10000.Dictionary = HUDBackground;
+            LabelRPM_10500.Dictionary = HUDBackground;
+            LabelRPM_11000.Dictionary = HUDBackground;
+            LabelRPM_11500.Dictionary = HUDBackground;
+            LabelRPM_12000.Dictionary = HUDBackground;
+            LabelRPM_12500.Dictionary = HUDBackground;
+            LabelRPM_13000.Dictionary = HUDBackground;
+            LabelRPM_13500.Dictionary = HUDBackground;
+            LabelRPM_14000.Dictionary = HUDBackground;
+            LabelRPM_14500.Dictionary = HUDBackground;
+            LabelRPM_15000.Dictionary = HUDBackground;
+            LabelRPM_15500.Dictionary = HUDBackground;
+            LabelRPM_16000.Dictionary = HUDBackground;
+            LabelRPM_16500.Dictionary = HUDBackground;
+            LabelRPM_17000.Dictionary = HUDBackground;
+            LabelRPM_18000.Dictionary = HUDBackground;
+            LabelRPM_19000.Dictionary = HUDBackground;
 
-            // Speedometer Base
-            Ped playerPed = Game.Player.Character;
-            Player player = Game.Player;
-            if (categorySpeedoEnabled && playerPed != null && playerPed.IsInVehicle())
-            {
-                enabledtext2 = "True";
-            }
-            else
-            {
-                enabledtext2 = "False";
-            }
+            ABSTextureImage.Dictionary = HUDBackground;
+            TCSTextureImage.Dictionary = HUDBackground;
+            //       RevEngineOffImage.Dictionary = HUDBackground;
 
-            if (statusHUD)
-            {
-                enabledtext3 = "True";
-            }
-            else
-            {
-                enabledtext3 = "False";
-            }
+            HeadlightsImage.Color = Color.FromArgb(headlightToggle, 255, 255, 255);
 
-            if (isHideHUDForOpenPhoneorCharacterWheel)
-            {
-                enabledtext4 = "True";
-            }
-            else
-            {
-                enabledtext4 = "False";
-            }
-            
-            // GTA.UI.Screen.ShowSubtitle("isMainHUDModEnabled = " + enabledtext1 + "\n" + " categorySpeedoEnabled = " + enabledtext2 + "\n" + " statusHUD = " + enabledtext3 + "\n" + " isHideHUDForOpenPhoneorCharacterWheel = " + enabledtext4);
+            float throttleInput = Game.GetControlValueNormalized(GTA.Control.VehicleAccelerate);
+            float brakeInput = Game.GetControlValueNormalized(GTA.Control.VehicleBrake);
+            int currentThrottle = (int)Math.Round(throttleInput * 99);
+            int currentBrake = (int)Math.Round(brakeInput * 99);
+
+            string textureGasName = "GasPedal_" + currentThrottle.ToString("000");
+            ThrottleImageHUD.Texture = textureGasName;
+
+            string textureBrakeName = "BrakePedal_" + currentBrake.ToString("000");
+            BrakeImageHUD.Texture = textureBrakeName;
 
             switch (categoryName)
             {
@@ -1172,7 +1092,7 @@ namespace TDUSCSpeedometerGTAV
         private bool statusHUD;
 
         private bool headlightsSeason5;
-        private void TDUSC_HUDDemoTick()
+        private void TDUSC_HUDTick()
         {
             if (!isMainHUDModEnabled)
             {
@@ -1187,6 +1107,7 @@ namespace TDUSCSpeedometerGTAV
                 if (statusHUD && playerPed != null && playerPed.IsInVehicle())
                 {
                     Vehicle vehicleStatus = playerPed.CurrentVehicle;
+
                     // Turn on headlights automatically if desired
                     if (vehicleStatus.AreHighBeamsOn)
                     {
@@ -1201,26 +1122,22 @@ namespace TDUSCSpeedometerGTAV
                         headlightsSeason5 = false;
                     }
 
-
                     // ส่วนนี้จะทำงานทุกๆ 500 มิลลิวินาที (ไม่บล็อกการเช็คค่า bool ด้านบน)
                     if (vehicleStatus.IsLeftIndicatorLightOn)
                     {
                         // ใช้เฉพาะ Game.GameTime หารเอาเศษ เพื่อทำไฟกระพริบสลับทุกๆ 0.5 วินาที
                         if ((Game.GameTime % 1000) < 500)
                         {
-                            TurnSignalLeftRelease_Enabled = true;
-                            TurnSignalLeftDemo_Enabled = true;
+                            TurnSignalLeft_Enabled = true;
                         }
                         else
                         {
-                            TurnSignalLeftRelease_Enabled = false;
-                            TurnSignalLeftDemo_Enabled = false;
+                            TurnSignalLeft_Enabled = false;
                         }
                     }
                     else
                     {
-                        TurnSignalLeftRelease_Enabled = false;
-                        TurnSignalLeftDemo_Enabled = false;
+                        TurnSignalLeft_Enabled = false;
                     }
 
 
@@ -1229,19 +1146,16 @@ namespace TDUSCSpeedometerGTAV
                         // ใช้เฉพาะ Game.GameTime หารเอาเศษ เพื่อทำไฟกระพริบสลับทุกๆ 0.5 วินาที
                         if ((Game.GameTime % 1000) < 500)
                         {
-                            TurnSignalRightRelease_Enabled = true;
-                            TurnSignalRightDemo_Enabled = true;
+                            TurnSignalRight_Enabled = true;
                         }
                         else
                         {
-                            TurnSignalRightRelease_Enabled = false;
-                            TurnSignalRightDemo_Enabled = false;
+                            TurnSignalRight_Enabled = false;
                         }
                     }
                     else
                     {
-                        TurnSignalRightRelease_Enabled = false;
-                        TurnSignalRightDemo_Enabled = false;
+                        TurnSignalRight_Enabled = false;
                     }
 
 
@@ -2220,1282 +2134,405 @@ namespace TDUSCSpeedometerGTAV
                         // Ensure the player is actually in a vehicle
                         if (currentVehicle != null && currentVehicle.Exists())
                         {
+                            // Outline
+                            BackgroundTextureImage2.Draw();
+                            BackgroundTextureImage.Draw();
 
-                            if (HUD_Demo)
+                            if (isKMH)
                             {
-                                // Outline
-                                BackgroundTextureImage2.Draw();
-                                BackgroundTextureImage.Draw();
+                                ImageKMH.Draw();
+                            }
 
-                                if (isKMH)
-                                {
-
-                                    switch (isUnitsLanguage)
-                                    {
-
-                                        case 0:
-                                            ImageKMH.Draw();
-                                            break;
-                                        case 1:
-                                            ImageKMH_DNKNOR.Draw();
-                                            break;
-                                        case 2:
-                                            ImageKMH_NLD.Draw();
-                                            break;
-                                        case 3:
-                                            ImageKMH_RUS.Draw();
-                                            break;
-                                        case 4:
-                                            ImageKMH_TUR.Draw();
-                                            break;
-                                        case 5:
-                                            ImageKMH_UKR.Draw();
-                                            break;
-                                        case 6:
-                                            ImageKMH_VNM.Draw();
-                                            break;
-                                    }
-                                }
-
-                                if (isMPH)
-                                {
-                                    switch (isUnitsLanguage)
-                                    {
-                                        case 0:
-                                            ImageMPH.Draw();
-                                            break;
-                                        case 1:
-                                            ImageMPH.Draw();
-                                            break;
-                                        case 2:
-                                            ImageMPH_NLD.Draw();
-                                            break;
-                                        case 3:
-                                            ImageMPH_RUS.Draw();
-                                            break;
-                                        case 4:
-                                            ImageMPH_TUR.Draw();
-                                            break;
-                                        case 5:
-                                            ImageMPH_UKR.Draw();
-                                            break;
-                                        case 6:
-                                            ImageMPH_VNM.Draw();
-                                            break;
-                                    }
-                                }
+                            if (isMPH)
+                            {
+                                ImageMPH.Draw();
+                            }
 
 
-                                speedTextureImage.Draw();
+                            speedTextureImage.Draw();
+
+                            
+                            if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
+                            {
+                                LabelRPM_2000.Draw();
+                            }
+                            else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
+                            {
+                                LabelRPM_2200.Draw();
+                            }
+                            else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
+                            {
+                                LabelRPM_2400.Draw();
+                            }
+                            else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
+                            {
+                                LabelRPM_2600.Draw();
+                            }
+                            else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
+                            {
+                                LabelRPM_2800.Draw();
+                            }
+                            else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
+                            {
+                                LabelRPM_3000.Draw();
+                            }
+                            else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
+                            {
+                                LabelRPM_4000.Draw();
+                            }
+                            else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
+                            {
+                                LabelRPM_4500.Draw();
+                            }
+                            else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
+                            {
+                                LabelRPM_5000.Draw();
+                            }
+                            else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
+                            {
+                                LabelRPM_5200.Draw();
+                            }
+                            else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
+                            {
+                                LabelRPM_5400.Draw();
+                            }
+                            else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
+                            {
+                                LabelRPM_5600.Draw();
+                            }
+                            else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
+                            {
+                                LabelRPM_5800.Draw();
+                            }
+                            else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
+                            {
+                                LabelRPM_6000.Draw();
+                            }
+                            else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
+                            {
+                                LabelRPM_6200.Draw();
+                            }
+                            else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
+                            {
+                                LabelRPM_6400.Draw();
+                            }
+                            else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
+                            {
+                                LabelRPM_6600.Draw();
+                            }
+                            else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
+                            {
+                                LabelRPM_6800.Draw();
+                            }
+                            else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
+                            {
+                                LabelRPM_7000.Draw();
+                            }
+                            else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
+                            {
+                                LabelRPM_7200.Draw();
+                            }
+                            else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
+                            {
+                                LabelRPM_7400.Draw();
+                            }
+                            else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
+                            {
+                                LabelRPM_7600.Draw();
+                            }
+                            else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
+                            {
+                                LabelRPM_7800.Draw();
+                            }
+                            else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
+                            {
+                                LabelRPM_8000.Draw();
+                            }
+                            else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
+                            {
+                                LabelRPM_8200.Draw();
+                            }
+                            else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
+                            {
+                                LabelRPM_8400.Draw();
+                            }
+                            else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
+                            {
+                                LabelRPM_8600.Draw();
+                            }
+                            else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
+                            {
+                                LabelRPM_8800.Draw();
+                            }
+                            else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
+                            {
+                                LabelRPM_9000.Draw();
+                            }
+                            else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
+                            {
+                                LabelRPM_9200.Draw();
+                            }
+                            else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
+                            {
+                                LabelRPM_9400.Draw();
+                            }
+                            else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
+                            {
+                                LabelRPM_9600.Draw();
+                            }
+                            else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
+                            {
+                                LabelRPM_9800.Draw();
+                            }
+                            else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
+                            {
+                                LabelRPM_10000.Draw();
+                            }
+                            else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
+                            {
+                                LabelRPM_10500.Draw();
+                            }
+                            else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
+                            {
+                                LabelRPM_11000.Draw();
+                            }
+                            else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
+                            {
+                                LabelRPM_11500.Draw();
+                            }
+                            else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
+                            {
+                                LabelRPM_12000.Draw();
+                            }
+                            else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
+                            {
+                                LabelRPM_12500.Draw();
+                            }
+                            else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
+                            {
+                                LabelRPM_13000.Draw();
+                            }
+                            else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
+                            {
+                                LabelRPM_13500.Draw();
+                            }
+                            else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
+                            {
+                                LabelRPM_14000.Draw();
+                            }
+                            else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
+                            {
+                                LabelRPM_14500.Draw();
+                            }
+                            else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
+                            {
+                                LabelRPM_15000.Draw();
+                            }
+                            else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
+                            {
+                                LabelRPM_15500.Draw();
+                            }
+                            else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
+                            {
+                                LabelRPM_16000.Draw();
+                            }
+                            else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
+                            {
+                                LabelRPM_16500.Draw();
+                            }
+                            else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
+                            {
+                                LabelRPM_17000.Draw();
+                            }
+                            else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
+                            {
+                                LabelRPM_18000.Draw();
+                            }
+                            else if (SetRPM >= rpm_19000 && SetRPM < 20000)
+                            {
+                                LabelRPM_19000.Draw();
+                            }
+                            else
+                            {
+                                LabelRPMDeafult.Draw();
+                            }
+                            
+                            if (gearhudcolour_default)
+                            {
+                                if (gearTexture != null)
+                                {
+                                    gearTexture.Draw();
+                                }
+                            }
+                            if (gearhudcolour_red)
+                            {
+                                if (gearTexture_Red != null)
+                                {
+                                    gearTexture_Red.Draw();
+                                }
+                            }
+                            // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                            if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
+                            {
+                                HandbrakeTextureImage.Draw();
+                            }
+
+                            Vehicle veh = playerPed.CurrentVehicle;
+
+                            // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
+                            // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
+                            float speedKmh = veh.Speed * isSwitchUnits;
+
+                            // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
+                            if (speedKmh > 250f) speedKmh = 250f;
+                            if (speedKmh < 0f) speedKmh = 0f;
+
+                            // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
+                            int speedInt = (int)Math.Round(speedKmh);
+                            string textureName = SpeedBaseTextureName + speedInt.ToString("D4");
+
+                            // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
+                            speedTextureImage.Texture = textureName;
 
 
-                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
+                            if (isRevEngineCurrent)
+                            {
+
+                                // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
+                                float targetRpm = veh.CurrentRPM;
+
+                                // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
+                                smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
+
+                                // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
+                                // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
+                                string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
+
+                                RevTextureImage.Texture = RPMtextureName;
+                                RevTextureImage.Draw();
+                            }
+
+                            if (isABSHUD)
+                            {
+                                ABSTextureImage.Draw();
+                            }
+                            if (isTCSHUD)
+                            {
+                                TCSTextureImage.Draw();
+                            }
+
+                            Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
+                            // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
+                            if (playerVeh != null && playerVeh.Exists())
+                            {
+                                isEngineOn = playerVeh.IsEngineRunning;
+
+                                // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
+                                if (isEngineOn)
                                 {
-                                    LabelRPM_2000.Draw();
-                                }
-                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                                {
-                                    LabelRPM_2200.Draw();
-                                }
-                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                                {
-                                    LabelRPM_2400.Draw();
-                                }
-                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                                {
-                                    LabelRPM_2600.Draw();
-                                }
-                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                                {
-                                    LabelRPM_2800.Draw();
-                                }
-                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                                {
-                                    LabelRPM_3000.Draw();
-                                }
-                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                                {
-                                    LabelRPM_4000.Draw();
-                                }
-                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                                {
-                                    LabelRPM_4500.Draw();
-                                }
-                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                                {
-                                    LabelRPM_5000.Draw();
-                                }
-                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                                {
-                                    LabelRPM_5200.Draw();
-                                }
-                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                                {
-                                    LabelRPM_5400.Draw();
-                                }
-                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                                {
-                                    LabelRPM_5600.Draw();
-                                }
-                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                                {
-                                    LabelRPM_5800.Draw();
-                                }
-                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                                {
-                                    LabelRPM_6000.Draw();
-                                }
-                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                                {
-                                    LabelRPM_6200.Draw();
-                                }
-                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                                {
-                                    LabelRPM_6400.Draw();
-                                }
-                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                                {
-                                    LabelRPM_6600.Draw();
-                                }
-                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                                {
-                                    LabelRPM_6800.Draw();
-                                }
-                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                                {
-                                    LabelRPM_7000.Draw();
-                                }
-                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                                {
-                                    LabelRPM_7200.Draw();
-                                }
-                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                                {
-                                    LabelRPM_7400.Draw();
-                                }
-                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                                {
-                                    LabelRPM_7600.Draw();
-                                }
-                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                                {
-                                    LabelRPM_7800.Draw();
-                                }
-                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                                {
-                                    LabelRPM_8000.Draw();
-                                }
-                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                                {
-                                    LabelRPM_8200.Draw();
-                                }
-                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                                {
-                                    LabelRPM_8400.Draw();
-                                }
-                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                                {
-                                    LabelRPM_8600.Draw();
-                                }
-                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                                {
-                                    LabelRPM_8800.Draw();
-                                }
-                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                                {
-                                    LabelRPM_9000.Draw();
-                                }
-                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                                {
-                                    LabelRPM_9200.Draw();
-                                }
-                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                                {
-                                    LabelRPM_9400.Draw();
-                                }
-                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                                {
-                                    LabelRPM_9600.Draw();
-                                }
-                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                                {
-                                    LabelRPM_9800.Draw();
-                                }
-                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                                {
-                                    LabelRPM_10000.Draw();
-                                }
-                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                                {
-                                    LabelRPM_10500.Draw();
-                                }
-                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                                {
-                                    LabelRPM_11000.Draw();
-                                }
-                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                                {
-                                    LabelRPM_11500.Draw();
-                                }
-                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                                {
-                                    LabelRPM_12000.Draw();
-                                }
-                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                                {
-                                    LabelRPM_12500.Draw();
-                                }
-                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                                {
-                                    LabelRPM_13000.Draw();
-                                }
-                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                                {
-                                    LabelRPM_13500.Draw();
-                                }
-                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                                {
-                                    LabelRPM_14000.Draw();
-                                }
-                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                                {
-                                    LabelRPM_14500.Draw();
-                                }
-                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                                {
-                                    LabelRPM_15000.Draw();
-                                }
-                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                                {
-                                    LabelRPM_15500.Draw();
-                                }
-                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                                {
-                                    LabelRPM_16000.Draw();
-                                }
-                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                                {
-                                    LabelRPM_16500.Draw();
-                                }
-                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                                {
-                                    LabelRPM_17000.Draw();
-                                }
-                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                                {
-                                    LabelRPM_18000.Draw();
-                                }
-                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                                {
-                                    LabelRPM_19000.Draw();
+                                    // Engine On
+                                    isRevEngineCurrent = true;
                                 }
                                 else
                                 {
-                                    LabelRPMDeafult.Draw();
-                                }
-
-                                if (gearhudcolour_default)
-                                {
-                                    if (gearTexture != null)
-                                    {
-                                        gearTexture.Draw();
-                                    }
-                                }
-                                if (gearhudcolour_red)
-                                {
-                                    if (gearTexture_Red != null)
-                                    {
-                                        gearTexture_Red.Draw();
-                                    }
-                                }
-                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
-                                {
-                                    HandbrakeTextureImage.Draw();
-                                }
-
-                                Vehicle veh = playerPed.CurrentVehicle;
-
-                                /* Speed Text */
-
-                                // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
-                                // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
-                                float speedKmh = veh.Speed * isSwitchUnits;
-
-                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
-                                if (speedKmh > 1000f) speedKmh = 1000f;
-                                if (speedKmh < 0f) speedKmh = 0f;
-
-                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
-                                int speedInt = (int)Math.Round(speedKmh);
-                                string textureName = SpeedBaseTextureName + speedInt.ToString("D4");
-
-                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
-                                speedTextureImage.Texture = textureName;
-
-
-                                if (isRevEngineCurrent)
-                                {
-                                    /* RPM */
-
-                                    // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
-                                    float targetRpm = veh.CurrentRPM;
-
-                                    // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
-                                    smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
-
-                                    // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
-                                    // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
-                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
-
-                                    RevTextureImage.Texture = RPMtextureName;
-                                    RevTextureImage.Draw();
-                                }
-
-                                if (isABSHUD)
-                                {
-                                    ABSTextureImage.Draw();
-                                }
-                                if (isTCSHUD)
-                                {
-                                    TCSTextureImage.Draw();
-                                }
-
-                                Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
-                                // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
-                                if (playerVeh != null && playerVeh.Exists())
-                                {
-                                    isEngineOn = playerVeh.IsEngineRunning;
-
-                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
-                                    if (isEngineOn)
-                                    {
-                                        // Engine On
-                                        isRevEngineCurrent = true;
-                                    }
-                                    else
-                                    {
-                                        // Engine Off
-                                        RevEngineOffImage.Draw();
-                                        isRevEngineCurrent = false;
-                                    }
-                                }
-
-                                DriftHUD();
-
-                                // Check if the player is alive and inside a vehicle
-                                if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
-                                {
-                                    Vehicle veh2 = playerPed.CurrentVehicle;
-                                    int currentGear = veh2.CurrentGear;
-                                    bool isNeutral = false;
-
-                                    // ลอจิกจำลองเกียร์ว่าง (Neutral) 
-                                    // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
-                                    if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
-                                    {
-                                        isNeutral = true;
-                                    }
-
-                                    // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
-                                    if (currentGear != lastGear || isNeutral != wasNeutral)
-                                    {
-                                        string textureNameGear = GetGearTextureName(currentGear, isNeutral);
-
-                                        // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
-                                        // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
-                                        gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict, textureNameGear);
-                                        gearTexture.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
-
-                                        gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict, textureNameGear);
-                                        gearTexture_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
-
-                                        lastGear = currentGear;
-                                        wasNeutral = isNeutral;
-                                    }
-                                }
-                                else
-                                {
-                                    // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
-                                    smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
-
-                                    // รีเซ็ตสถานะเมื่อลงจากรถ
-                                    lastGear = -1;
-                                    wasNeutral = false;
-                                    gearTexture = null;
-                                    gearTexture_Red = null;
-                                }
-                                if (TurnSignalLeftDemo_Enabled)
-                                {
-                                    TurnSignalLeftDemo.Draw();
-                                }
-                                if (TurnSignalRightDemo_Enabled)
-                                {
-                                    TurnSignalRightDemo.Draw();
+                                    // Engine Off
+                                    RevEngineOffImage.Draw();
+                                    isRevEngineCurrent = false;
                                 }
                             }
 
-                            // Release HUD
-                            if (HUD_Release)
+                            DriftHUD();
+
+                            // Check if the player is alive and inside a vehicle
+                            if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
                             {
-                                // Outline
-                                BackgroundTextureImage2_Release.Draw();
-                                BackgroundTextureImage_Release.Draw();
+                                Vehicle veh2 = playerPed.CurrentVehicle;
+                                int currentGear = veh2.CurrentGear;
+                                bool isNeutral = false;
 
-                                if (isKMH)
+                                // ลอจิกจำลองเกียร์ว่าง (Neutral) 
+                                // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
+                                if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
                                 {
-
-                                    switch (isUnitsLanguage)
-                                    {
-
-                                        case 0:
-                                            ImageKMH_Release.Draw();
-                                            break;
-                                        case 1:
-                                            ImageKMH_DNKNOR_Release.Draw();
-                                            break;
-                                        case 2:
-                                            ImageKMH_NLD_Release.Draw();
-                                            break;
-                                        case 3:
-                                            ImageKMH_RUS_Release.Draw();
-                                            break;
-                                        case 4:
-                                            ImageKMH_TUR_Release.Draw();
-                                            break;
-                                        case 5:
-                                            ImageKMH_UKR_Release.Draw();
-                                            break;
-                                        case 6:
-                                            ImageKMH_VNM_Release.Draw();
-                                            break;
-                                    }
+                                    isNeutral = true;
                                 }
 
-                                if (isMPH)
+                                // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
+                                if (currentGear != lastGear || isNeutral != wasNeutral)
                                 {
-                                    switch (isUnitsLanguage)
-                                    {
-                                        case 0:
-                                            ImageMPH_Release.Draw();
-                                            break;
-                                        case 1:
-                                            ImageMPH_Release.Draw();
-                                            break;
-                                        case 2:
-                                            ImageMPH_NLD_Release.Draw();
-                                            break;
-                                        case 3:
-                                            ImageMPH_RUS_Release.Draw();
-                                            break;
-                                        case 4:
-                                            ImageMPH_TUR_Release.Draw();
-                                            break;
-                                        case 5:
-                                            ImageMPH_UKR_Release.Draw();
-                                            break;
-                                        case 6:
-                                            ImageMPH_VNM_Release.Draw();
-                                            break;
-                                    }
-                                }
+                                    string textureNameGear = GetGearTextureName(currentGear, isNeutral);
 
+                                    // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
+                                    // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
+                                    gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, textureNameGear);
+                                    gearTexture.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
 
-                                speedTextureImage_Release.Draw();
+                                    gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, textureNameGear);
+                                    gearTexture_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
 
-
-
-                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
-                                {
-                                    LabelRPM_2000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                                {
-                                    LabelRPM_2200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                                {
-                                    LabelRPM_2400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                                {
-                                    LabelRPM_2600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                                {
-                                    LabelRPM_2800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                                {
-                                    LabelRPM_3000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                                {
-                                    LabelRPM_4000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                                {
-                                    LabelRPM_4500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                                {
-                                    LabelRPM_5000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                                {
-                                    LabelRPM_5200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                                {
-                                    LabelRPM_5400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                                {
-                                    LabelRPM_5600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                                {
-                                    LabelRPM_5800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                                {
-                                    LabelRPM_6000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                                {
-                                    LabelRPM_6200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                                {
-                                    LabelRPM_6400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                                {
-                                    LabelRPM_6600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                                {
-                                    LabelRPM_6800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                                {
-                                    LabelRPM_7000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                                {
-                                    LabelRPM_7200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                                {
-                                    LabelRPM_7400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                                {
-                                    LabelRPM_7600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                                {
-                                    LabelRPM_7800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                                {
-                                    LabelRPM_8000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                                {
-                                    LabelRPM_8200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                                {
-                                    LabelRPM_8400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                                {
-                                    LabelRPM_8600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                                {
-                                    LabelRPM_8800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                                {
-                                    LabelRPM_9000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                                {
-                                    LabelRPM_9200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                                {
-                                    LabelRPM_9400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                                {
-                                    LabelRPM_9600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                                {
-                                    LabelRPM_9800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                                {
-                                    LabelRPM_10000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                                {
-                                    LabelRPM_10500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                                {
-                                    LabelRPM_11000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                                {
-                                    LabelRPM_11500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                                {
-                                    LabelRPM_12000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                                {
-                                    LabelRPM_12500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                                {
-                                    LabelRPM_13000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                                {
-                                    LabelRPM_13500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                                {
-                                    LabelRPM_14000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                                {
-                                    LabelRPM_14500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                                {
-                                    LabelRPM_15000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                                {
-                                    LabelRPM_15500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                                {
-                                    LabelRPM_16000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                                {
-                                    LabelRPM_16500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                                {
-                                    LabelRPM_17000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                                {
-                                    LabelRPM_18000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                                {
-                                    LabelRPM_19000_Release.Draw();
-                                }
-                                else
-                                {
-                                    LabelRPMDeafult_Release.Draw();
-                                }
-                                if (gearhudcolour_default)
-                                {
-                                    if (gearTexture_Release != null)
-                                    {
-                                        gearTexture_Release.Draw();
-                                    }
-                                }
-                                if (gearhudcolour_red)
-                                {
-                                    if (gearTexture_Release != null)
-                                    {
-                                        gearTexture_Release_Red.Draw();
-                                    }
-                                }
-
-                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
-                                {
-                                    HandbrakeTextureImage_Release.Draw();
-                                }
-
-                                Vehicle veh = playerPed.CurrentVehicle;
-
-                                /* Speed Text */
-
-                                // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
-                                // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
-                                float speedKmh = veh.Speed * isSwitchUnits;
-
-                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
-                                if (speedKmh > 1000f) speedKmh = 1000f;
-                                if (speedKmh < 0f) speedKmh = 0f;
-
-                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
-                                int speedInt = (int)Math.Round(speedKmh);
-                                string textureName = SpeedBaseTextureName_Release + speedInt.ToString("D4");
-
-                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
-                                speedTextureImage_Release.Texture = textureName;
-
-                                if (isRevEngineCurrent)
-                                {
-                                    /* RPM */
-
-                                    // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
-                                    float targetRpm = veh.CurrentRPM;
-
-                                    // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
-                                    smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
-
-                                    // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
-                                    // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
-                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
-
-                                    RevTextureImage_Release.Texture = RPMtextureName;
-                                    RevTextureImage_Release.Draw();
-                                }
-
-                                if (isABSHUD)
-                                {
-                                    ABSTextureImage_Release.Draw();
-                                }
-                                if (isTCSHUD)
-                                {
-                                    TCSTextureImage_Release.Draw();
-                                }
-
-                                Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
-                                // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
-                                if (playerVeh != null && playerVeh.Exists())
-                                {
-                                    isEngineOn = playerVeh.IsEngineRunning;
-
-                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
-                                    if (isEngineOn)
-                                    {
-                                        // Engine On
-                                        isRevEngineCurrent = true;
-                                    }
-                                    else
-                                    {
-                                        // Engine Off
-                                        RevEngineOffImage_Release.Draw();
-                                        isRevEngineCurrent = false;
-                                    }
-                                }
-
-                                // Check if the player is alive and inside a vehicle
-                                if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
-                                {
-                                    Vehicle veh2 = playerPed.CurrentVehicle;
-                                    int currentGear = veh2.CurrentGear;
-                                    bool isNeutral = false;
-
-                                    // ลอจิกจำลองเกียร์ว่าง (Neutral) 
-                                    // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
-                                    if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
-                                    {
-                                        isNeutral = true;
-                                    }
-
-                                    // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
-                                    if (currentGear != lastGear || isNeutral != wasNeutral)
-                                    {
-                                        string textureNameGear = GetGearTextureName(currentGear, isNeutral);
-
-                                        // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
-                                        // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
-                                        gearTexture_Release = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Release, textureNameGear);
-                                        gearTexture_Release.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
-
-                                        gearTexture_Release_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Release, textureNameGear);
-                                        gearTexture_Release_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
-
-                                        lastGear = currentGear;
-                                        wasNeutral = isNeutral;
-                                    }
-                                }
-                                else
-                                {
-                                    // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
-                                    smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
-
-                                    // รีเซ็ตสถานะเมื่อลงจากรถ
-                                    lastGear = -1;
-                                    wasNeutral = false;
-                                    gearTexture_Release = null;
-                                    gearTexture_Release_Red = null;
-                                }
-
-                                if (TurnSignalLeftRelease_Enabled)
-                                {
-                                    TurnSignalLeft.Draw();
-                                }
-                                if (TurnSignalRightRelease_Enabled)
-                                {
-                                    TurnSignalRight.Draw();
+                                    lastGear = currentGear;
+                                    wasNeutral = isNeutral;
                                 }
                             }
-
-                            // Season 5 V1 HUD
-                            if (HUD_Season5V1)
+                            else
                             {
-                                // Outline
-                                BackgroundTextureImage2_Release.Draw();
-                                BackgroundTextureImage_Season5V1.Draw();
+                                // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
+                                smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
 
-                                if (isKMH)
-                                {
-
-                                    switch (isUnitsLanguage)
-                                    {
-
-                                        case 0:
-                                            ImageKMH_Release.Draw();
-                                            break;
-                                        case 1:
-                                            ImageKMH_DNKNOR_Release.Draw();
-                                            break;
-                                        case 2:
-                                            ImageKMH_NLD_Release.Draw();
-                                            break;
-                                        case 3:
-                                            ImageKMH_RUS_Release.Draw();
-                                            break;
-                                        case 4:
-                                            ImageKMH_TUR_Release.Draw();
-                                            break;
-                                        case 5:
-                                            ImageKMH_UKR_Release.Draw();
-                                            break;
-                                        case 6:
-                                            ImageKMH_VNM_Release.Draw();
-                                            break;
-                                    }
-                                }
-
-                                if (isMPH)
-                                {
-                                    switch (isUnitsLanguage)
-                                    {
-                                        case 0:
-                                            ImageMPH_Release.Draw();
-                                            break;
-                                        case 1:
-                                            ImageMPH_Release.Draw();
-                                            break;
-                                        case 2:
-                                            ImageMPH_NLD_Release.Draw();
-                                            break;
-                                        case 3:
-                                            ImageMPH_RUS_Release.Draw();
-                                            break;
-                                        case 4:
-                                            ImageMPH_TUR_Release.Draw();
-                                            break;
-                                        case 5:
-                                            ImageMPH_UKR_Release.Draw();
-                                            break;
-                                        case 6:
-                                            ImageMPH_VNM_Release.Draw();
-                                            break;
-                                    }
-                                }
-
-
-                                speedTextureImage_Release.Draw();
-
-
-
-                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
-                                {
-                                    LabelRPM_2000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                                {
-                                    LabelRPM_2200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                                {
-                                    LabelRPM_2400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                                {
-                                    LabelRPM_2600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                                {
-                                    LabelRPM_2800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                                {
-                                    LabelRPM_3000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                                {
-                                    LabelRPM_4000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                                {
-                                    LabelRPM_4500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                                {
-                                    LabelRPM_5000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                                {
-                                    LabelRPM_5200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                                {
-                                    LabelRPM_5400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                                {
-                                    LabelRPM_5600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                                {
-                                    LabelRPM_5800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                                {
-                                    LabelRPM_6000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                                {
-                                    LabelRPM_6200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                                {
-                                    LabelRPM_6400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                                {
-                                    LabelRPM_6600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                                {
-                                    LabelRPM_6800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                                {
-                                    LabelRPM_7000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                                {
-                                    LabelRPM_7200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                                {
-                                    LabelRPM_7400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                                {
-                                    LabelRPM_7600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                                {
-                                    LabelRPM_7800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                                {
-                                    LabelRPM_8000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                                {
-                                    LabelRPM_8200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                                {
-                                    LabelRPM_8400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                                {
-                                    LabelRPM_8600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                                {
-                                    LabelRPM_8800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                                {
-                                    LabelRPM_9000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                                {
-                                    LabelRPM_9200_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                                {
-                                    LabelRPM_9400_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                                {
-                                    LabelRPM_9600_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                                {
-                                    LabelRPM_9800_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                                {
-                                    LabelRPM_10000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                                {
-                                    LabelRPM_10500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                                {
-                                    LabelRPM_11000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                                {
-                                    LabelRPM_11500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                                {
-                                    LabelRPM_12000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                                {
-                                    LabelRPM_12500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                                {
-                                    LabelRPM_13000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                                {
-                                    LabelRPM_13500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                                {
-                                    LabelRPM_14000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                                {
-                                    LabelRPM_14500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                                {
-                                    LabelRPM_15000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                                {
-                                    LabelRPM_15500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                                {
-                                    LabelRPM_16000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                                {
-                                    LabelRPM_16500_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                                {
-                                    LabelRPM_17000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                                {
-                                    LabelRPM_18000_Release.Draw();
-                                }
-                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                                {
-                                    LabelRPM_19000_Release.Draw();
-                                }
-                                else
-                                {
-                                    LabelRPMDeafult_Release.Draw();
-                                }
-                                if (gearhudcolour_default)
-                                {
-                                    if (gearTexture_Season5 != null)
-                                    {
-                                        gearTexture_Season5.Draw();
-                                    }
-                                }
-                                if (gearhudcolour_red)
-                                {
-                                    if (gearTexture_Season5 != null)
-                                    {
-                                        gearTexture_Season5_Red.Draw();
-                                    }
-                                }
-
-                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
-                                {
-                                    HandbrakeTextureImage_Release.Draw();
-                                }
-
-                                Vehicle veh = playerPed.CurrentVehicle;
-
-                                /* Speed Text */
-
-                                // คำนวณความเร็ว (ความเร็วปกติของเกมเป็น เมตร/วินาที คูณ 3.6 เพื่อแปลงเป็น กม./ชม.)
-                                // หากต้องการเป็น ไมล์/ชั่วโมง (MPH) ให้คูณด้วย 2.236936f
-                                float speedKmh = veh.Speed * isSwitchUnits;
-
-                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
-                                if (speedKmh > 1000f) speedKmh = 1000f;
-                                if (speedKmh < 0f) speedKmh = 0f;
-
-                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
-                                int speedInt = (int)Math.Round(speedKmh);
-                                string textureName = SpeedBaseTextureName_Release + speedInt.ToString("D4");
-
-                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
-                                speedTextureImage_Release.Texture = textureName;
-
-                                if (isRevEngineCurrent)
-                                {
-                                    /* RPM */
-
-                                    // ดึงค่า RPM จริงจากรถปัจจุบัน (0.0 ถึง 1.0)
-                                    float targetRpm = veh.CurrentRPM;
-
-                                    // สูตร LERP: ค่อยๆ ขยับ smoothedRpm เข้าหา targetRpm ทีละนิดในทุกเฟรม
-                                    smoothedRpm = smoothedRpm + (targetRpm - smoothedRpm) * interpolationSpeed;
-
-                                    // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
-                                    // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
-                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
-
-                                    RevTextureImage_Season5V1.Texture = RPMtextureName;
-                                    RevTextureImage_Season5V1.Draw();
-                                }
-
-                                if (isABSHUD)
-                                {
-                                    ABSTextureImage_Season5.Draw();
-                                }
-                                if (isTCSHUD)
-                                {
-                                    TCSTextureImage_Season5.Draw();
-                                }
-
-                                Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
-                                // ตรวจสอบว่าผู้เล่นอยู่ในรถหรือไม่
-                                if (playerVeh != null && playerVeh.Exists())
-                                {
-                                    isEngineOn = playerVeh.IsEngineRunning;
-
-                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
-                                    if (isEngineOn)
-                                    {
-                                        // Engine On
-                                        isRevEngineCurrent = true;
-                                    }
-                                    else
-                                    {
-                                        // Engine Off
-                                        RevEngineOffImage_Release.Draw();
-                                        isRevEngineCurrent = false;
-                                    }
-                                }
-
-                                // Check if the player is alive and inside a vehicle
-                                if (playerPed != null && playerPed.IsAlive && playerPed.IsInVehicle())
-                                {
-                                    Vehicle veh2 = playerPed.CurrentVehicle;
-                                    int currentGear = veh2.CurrentGear;
-                                    bool isNeutral = false;
-
-                                    // ลอจิกจำลองเกียร์ว่าง (Neutral) 
-                                    // ใน GTA V ค่าเกียร์ 1 จะถูกส่งมาตอนจอดนิ่งๆ ด้วย ดังนั้นเราจะเช็คเพิ่มว่าถ้ารถหยุดนิ่งและรอบเครื่องต่ำ ให้สลับเป็นภาพเกียร์ว่าง
-                                    if (currentGear == 1 && veh2.Speed < 0.1f && veh2.CurrentRPM < 0.3f)
-                                    {
-                                        isNeutral = true;
-                                    }
-
-                                    // อัปเดตรูปภาพเฉพาะเมื่อเกียร์เปลี่ยน หรือสถานะเกียร์ว่างเปลี่ยน เพื่อลดภาระการทำงาน
-                                    if (currentGear != lastGear || isNeutral != wasNeutral)
-                                    {
-                                        string textureNameGear = GetGearTextureName(currentGear, isNeutral);
-
-                                        // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
-                                        // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
-                                        gearTexture_Season5 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Season5, textureNameGear);
-                                        gearTexture_Season5.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
-
-                                        gearTexture_Season5_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), GearTextureDict_Season5, textureNameGear);
-                                        gearTexture_Season5_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
-
-                                        lastGear = currentGear;
-                                        wasNeutral = isNeutral;
-                                    }
-                                }
-                                else
-                                {
-                                    // ถ้าอยู่นอกรถ ให้เข็มค่อยๆ ตกกลับไปที่ 0 อย่างนุ่มนวล
-                                    smoothedRpm = smoothedRpm + (0f - smoothedRpm) * interpolationSpeed;
-
-                                    // รีเซ็ตสถานะเมื่อลงจากรถ
-                                    lastGear = -1;
-                                    wasNeutral = false;
-                                    gearTexture_Season5 = null;
-                                    gearTexture_Season5_Red = null;
-                                }
-
-                                if (headlightsSeason5)
-                                {
-                                    HeadlightHUD_Season5.Draw();
-                                }
-                                if (TurnSignalLeftRelease_Enabled)
-                                {
-                                    TurnSignalLeft.Draw();
-                                }
-                                if (TurnSignalRightRelease_Enabled)
-                                {
-                                    TurnSignalRight.Draw();
-                                }
+                                // รีเซ็ตสถานะเมื่อลงจากรถ
+                                lastGear = -1;
+                                wasNeutral = false;
+                                gearTexture = null;
+                                gearTexture_Red = null;
+                            }
+                            
+                            if (TurnSignalLeft_Enabled)
+                            {
+                                TurnSignalLeft.Draw();
+                            }
+                            if (TurnSignalRight_Enabled)
+                            {
+                                TurnSignalRight.Draw();
+                            }
+                            if (headlightsSeason5)
+                            {
+                                HeadlightsImage.Draw();
+                            }
+                            if(isHUDThrottleAndBrakeSeason5)
+                            {
+                                ThrottleImageHUD.Draw();
+                                BrakeImageHUD.Draw();
                             }
                         }
                     }
-                    // Phone and Character Wheel
-                    Vehicle characterWheels = Game.Player.Character.CurrentVehicle;
-                    if (characterWheels != null && characterWheels.Exists())
+                }
+                // Phone and Character Wheel
+                Vehicle characterWheels = Game.Player.Character.CurrentVehicle;
+                if (characterWheels != null && characterWheels.Exists())
+                {
+                    // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                    if (Game.IsControlPressed(GTA.Control.CharacterWheel))
                     {
-                        // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                        if (Game.IsControlPressed(GTA.Control.CharacterWheel))
-                        {
-                            isHideHUDForOpenPhoneorCharacterWheel = false;
-                        }
-                        else
-                        {
-                            isHideHUDForOpenPhoneorCharacterWheel = true;
+                        isHideHUDForOpenPhoneorCharacterWheel = false;
+                    }
+                    else
+                    {
+                        isHideHUDForOpenPhoneorCharacterWheel = true;
 
-                            // Ensure the player exists and is alive
-                            if (playerPed != null && playerPed.Exists() && playerPed.IsAlive)
+                        // Ensure the player exists and is alive
+                        if (playerPed != null && playerPed.Exists() && playerPed.IsAlive)
+                        {
+                            // Call the native hash function
+                            // Arguments: Hash, Return Type, Input Parameters (the ped's handle)
+                            bool isUsingPhone = Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, playerPed.Handle);
+
+                            if (isUsingPhone)
                             {
-                                // Call the native hash function
-                                // Arguments: Hash, Return Type, Input Parameters (the ped's handle)
-                                bool isUsingPhone = Function.Call<bool>(Hash.IS_PED_RUNNING_MOBILE_PHONE_TASK, playerPed.Handle);
-
-                                if (isUsingPhone)
-                                {
-                                    isHideHUDForOpenPhoneorCharacterWheel = false;
-                                }
-                                else
-                                {
-                                    isHideHUDForOpenPhoneorCharacterWheel = true;
-                                }
+                                isHideHUDForOpenPhoneorCharacterWheel = false;
+                            }
+                            else
+                            {
+                                isHideHUDForOpenPhoneorCharacterWheel = true;
                             }
                         }
                     }
@@ -3618,7 +2655,10 @@ namespace TDUSCSpeedometerGTAV
                         // 3. Determine drift status and show subtitle
                         if (angle >= DriftAngleThreshold)
                         {
-                            DriftTextureImage.Draw();
+                            if(isDriftHUD)
+                            {
+                                DriftTextureImage.Draw();
+                            }
                         }
                     }
                 }
@@ -3650,7 +2690,7 @@ namespace TDUSCSpeedometerGTAV
                 case VehicleClass.Military: return "Military";
                 case VehicleClass.Commercial: return "Commercial";
                 case VehicleClass.OpenWheel: return "OpenWheel";
-                default: return "ยานพาหนะทั่วไป";
+                default: return "Vehicle General";
             }
         }
 
