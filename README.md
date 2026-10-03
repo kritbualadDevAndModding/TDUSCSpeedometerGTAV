@@ -20,6 +20,7 @@ This is my first experience creating a script mods first time, a speedometer HUD
 - ABS HUD
 - TCS HUD
 - Show Debug Name Cars
+- Added support for custom Max RPM configuration.
 
 **Requirement**
 - **GTA V Legacy Version 1.0.3889.0 or Latest**
