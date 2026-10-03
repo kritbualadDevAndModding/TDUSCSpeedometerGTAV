@@ -70,3 +70,10 @@ Once the script has reloaded, open the TDUSCSpeedoV menu and check the **`Show D
 TDUSCSpeedoV Menu
 ------------------------------
 **Menu Key = `K`**
+
+**PLEASE DO NOT UPLOAD THIS FILE TO ANY OTHER WEBSITE WITHOUT MY SPECIFIC CONSENT.**
+------------------------------
+**Changelog**
+
+v1.0
+- Initial Release
