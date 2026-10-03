@@ -1011,8 +1011,8 @@ namespace TDUSCSpeedometerGTAV
                     categorySpeedoEnabled = true;
                     break;
                 case "Coupes":
-                    categorySpeedoEnabled = false;
-                    statusHUD = false;
+                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Muscle":
                     categorySpeedoEnabled = true;
