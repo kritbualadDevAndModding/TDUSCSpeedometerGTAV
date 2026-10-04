@@ -2382,7 +2382,7 @@ namespace TDUSCSpeedometerGTAV
                             float speedKmh = veh.Speed * isSwitchUnits;
 
                             // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
-                            if (speedKmh > 250f) speedKmh = 250f;
+                            if (speedKmh > 17990f) speedKmh = 1799f;
                             if (speedKmh < 0f) speedKmh = 0f;
 
                             // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
