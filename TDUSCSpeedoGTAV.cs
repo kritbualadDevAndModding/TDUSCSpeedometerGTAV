@@ -23,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.94";
+        private string version = "0.95";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -88,7 +88,7 @@ namespace TDUSCSpeedometerGTAV
         private int SelectVersionHUD;
 
         private string HUDBackground;
-        private string BackgroundTextureName = "background";
+        private string BackgroundTextureName;
         private string HUDHandbrake;
         private string HUDTurnSignalLeft;
         private string HUDTurnSignalRight;
@@ -560,10 +560,14 @@ namespace TDUSCSpeedometerGTAV
                 if (Enabled)
                 {
                     isMainHUDModEnabled = true;
+                    config.SetValue<bool>("HUD_SETTINGS", "Mod_Enabled", true);
+                    config.Save();
                 }
                 else
                 {
                     isMainHUDModEnabled = false;
+                    config.SetValue<bool>("HUD_SETTINGS", "Mod_Enabled", false);
+                    config.Save();
                 }
             };
             ABSToggle.CheckboxChanged += (sender, e) =>
@@ -641,7 +645,7 @@ namespace TDUSCSpeedometerGTAV
             Tick += OnTick;
             KeyUp += OnKeyDown;
 
-            // ระบบอ่านโหลดเซฟ
+            // ระบบอ่านโหลดเซฟ     
             switch (SelectVersionHUD)
             {
                 case 0:
