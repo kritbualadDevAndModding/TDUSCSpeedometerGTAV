@@ -23,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "0.92";
+        private string version = "0.94";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -898,7 +898,7 @@ namespace TDUSCSpeedometerGTAV
             BrakeImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalBrakeSeason5V2", "_000");
 
         }
-        private bool categorySpeedoEnabled;
+      //  private bool categorySpeedoEnabled;
 
         private string categoryName;
 
@@ -1002,76 +1002,70 @@ namespace TDUSCSpeedometerGTAV
             switch (categoryName)
             {
                 case "Compacts":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Sedans":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "SUV":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Coupes":
-                    categorySpeedoEnabled = true;
                     statusHUD = true;
                     break;
                 case "Muscle":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "SportsClassics":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Sports":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Super":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Motorcycles":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "OffRoad":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Industrial":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Utility":
-                    categorySpeedoEnabled = false;
                     statusHUD = false;
                     break;
                 case "Vans":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Cycles":
-                    categorySpeedoEnabled = false;
                     statusHUD = false;
                     break;
                 case "Boats":
-                    categorySpeedoEnabled = false;
                     statusHUD = false;
                     break;
                 case "Helicopters":
-                    categorySpeedoEnabled = false;
                     statusHUD = false;
                     break;
                 case "Planes":
-                    categorySpeedoEnabled = false;
                     statusHUD = false;
                     break;
                 case "Service":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Emergency":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Military":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "Commercial":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
                 case "OpenWheel":
-                    categorySpeedoEnabled = true;
+                    statusHUD = true;
                     break;
             }
         }
