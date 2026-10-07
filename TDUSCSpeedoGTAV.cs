@@ -1101,6 +1101,8 @@ namespace TDUSCSpeedometerGTAV
                 // Speedometer Base
                 Ped playerPed = Game.Player.Character;
                 Player player = Game.Player;
+                bool playerSwitchInProgress = Function.Call<bool>(Hash.IS_PLAYER_SWITCH_IN_PROGRESS);
+
 
                 if (statusHUD && playerPed != null && playerPed.IsInVehicle())
                 {
@@ -2149,7 +2151,7 @@ namespace TDUSCSpeedometerGTAV
 
                             speedTextureImage.Draw();
 
-                            
+
                             if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
                             {
                                 LabelRPM_2000.Draw();
@@ -2354,7 +2356,7 @@ namespace TDUSCSpeedometerGTAV
                             {
                                 LabelRPMDeafult.Draw();
                             }
-                            
+
                             if (gearhudcolour_default)
                             {
                                 if (gearTexture != null)
@@ -2483,7 +2485,7 @@ namespace TDUSCSpeedometerGTAV
                                 gearTexture = null;
                                 gearTexture_Red = null;
                             }
-                            
+
                             if (TurnSignalLeft_Enabled)
                             {
                                 TurnSignalLeft.Draw();
@@ -2496,7 +2498,7 @@ namespace TDUSCSpeedometerGTAV
                             {
                                 HeadlightsImage.Draw();
                             }
-                            if(isHUDThrottleAndBrakeSeason5)
+                            if (isHUDThrottleAndBrakeSeason5)
                             {
                                 ThrottleImageHUD.Draw();
                                 BrakeImageHUD.Draw();
