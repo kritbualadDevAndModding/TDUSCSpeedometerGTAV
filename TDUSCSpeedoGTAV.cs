@@ -23,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "1.0";
+        private string version = "1.2";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -1039,7 +1039,7 @@ namespace TDUSCSpeedometerGTAV
                     statusHUD = true;
                     break;
                 case "Utility":
-                    statusHUD = false;
+                    statusHUD = true;
                     break;
                 case "Vans":
                     statusHUD = true;
