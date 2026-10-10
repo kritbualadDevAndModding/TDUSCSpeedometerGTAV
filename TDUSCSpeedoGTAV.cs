@@ -23,15 +23,15 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "1.2";
+        private string version = "1.3";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
 
-        private float UIPositionX = 1570f;
-        private float UIPositionY = 725f;
+        private float UIPositionX; // 1570f
+        private float UIPositionY; // 725f
 
-        private float UISize = 295f;
+        private float UISize; // 295f
 
 
         // Gear Colour ARGB
@@ -47,10 +47,6 @@ namespace TDUSCSpeedometerGTAV
 
         private bool gearhudcolour_default;
         private bool gearhudcolour_red;
-        private bool gearhudcolour_default_season5;
-        private bool gearhudcolour_red_season5;
-        // ตัวแปรเก็บสถานะล่าสุดเพื่อไม่ให้ Debug Notification ขึ้นรัวๆ ทุกเฟรม
-        private bool wasPhoneVisible = false;
 
         // Menu UI
         private ObjectPool _menuPool;
@@ -84,7 +80,6 @@ namespace TDUSCSpeedometerGTAV
 
         // กำหนดชื่อไฟล์ .ytd ที่เราใส่ไว้ใน script_txds.rpf (ใส่แค่ชื่อ ไม่ต้องระบุนามสกุล .ytd)
 
-
         private int SelectVersionHUD;
 
         private string HUDBackground;
@@ -104,9 +99,7 @@ namespace TDUSCSpeedometerGTAV
 
         
           private ScaledTexture ImageKMH;
-      //  private string ImageKMHName = "";
           private ScaledTexture ImageMPH;
-      //  private string ImageMPHName = "mph";
 
 
 
@@ -349,6 +342,8 @@ namespace TDUSCSpeedometerGTAV
         private int headlightToggle;
 
         private bool isHUDThrottleAndBrakeSeason5;
+
+        private float setone = 1;
         public TDUSCSpeedoGTAV()
         {
             LoadConfigData();
@@ -380,11 +375,7 @@ namespace TDUSCSpeedometerGTAV
 
             var itemsListUnits = new List<string> { "Imperial", "Metric" };
             NativeListItem<string> UnitsListItem = new NativeListItem<string>("Units","Metric = KM/H\nImperial = MPH",itemsListUnits.ToArray());
-            UnitsListItem.SelectedIndex = UseKMH; // ตั้งค่าตำแหน่งเริ่มต้น
-
-            // --- สั่งโหลดไฟล์ .ytd เพียงก้อนเดียวไว้ล่วงหน้าตั้งแต่ม็อดเริ่มทำงาน ---
-     //       Function.Call(Hash.REQUEST_STREAMED_TEXTURE_DICT, HUDBackground, false);
-
+            UnitsListItem.SelectedIndex = UseKMH;
 
             var itemsListVersionHUD = new List<string> { "Demo", "Release", "Season 5 V1" , "Season 5 V2" };
             NativeListItem<string> VersionHUDListItem = new NativeListItem<string>("Version HUD","Select HUD",itemsListVersionHUD.ToArray());
@@ -397,6 +388,80 @@ namespace TDUSCSpeedometerGTAV
             NativeListItem<string> LanguageListItem = new NativeListItem<string>("Language Units", "Select Language for KM/H or MPH", itemsListLanguage.ToArray());
             LanguageListItem.SelectedIndex = isUnitsLanguage;
 
+            NativeItem selectSaveHUDPosition = new NativeItem("Save Position and Scale HUD");
+            NativeItem selectDefaultHUDPosition = new NativeItem("Default HUD Position and Scale", "Default Preset\nPosition X = 1570\nPosition Y = 725\nScale = 295");
+
+            selectSaveHUDPosition.Activated += (sender, e) =>
+            {
+                config.SetValue<float>("Position_HUD", "PosX", UIPositionX);
+                config.SetValue<float>("Position_HUD", "PosY", UIPositionY);
+                config.SetValue<float>("Size_HUD", "Scale", UISize);
+                config.Save();
+
+                GTA.UI.Screen.ShowSubtitle("Position and Scale HUD Saved!" , 4000);
+            };
+            selectDefaultHUDPosition.Activated += (sender, e) =>
+            {
+                UIPositionX = 1570f;
+                UIPositionY = 725f;
+                UISize = 295f;
+                config.SetValue<float>("Position_HUD", "PosX", 1570f);
+                config.SetValue<float>("Position_HUD", "PosY", 725f);
+                config.SetValue<float>("Size_HUD", "Scale", 295f);
+                config.Save();
+                GTA.UI.Screen.ShowSubtitle("Position and Scale HUD have been reset to default!", 4000);
+            };
+                /*
+                 * Default HUD
+                [Position_HUD]
+                PosX = 1570
+                PosY = 725
+
+                [Size_HUD]
+                Scale = 295
+
+                */
+
+            // 2. เตรียมรายการตัวเลข float สำหรับตำแหน่ง X และ Y
+                List<float> xPositions = new List<float>();
+            for (float i = 0.0f; i <= 9999.0f; i += setone) xPositions.Add((float)Math.Round(i, 1));
+
+            List<float> yPositions = new List<float>();
+            for (float i = 0.0f; i <= 9999.0f; i += setone) yPositions.Add((float)Math.Round(i, 1));
+
+            // 3. เตรียมรายการตัวเลข float สำหรับขนาด Scale (กว้าง/สูง) เริ่มที่ 10.0f ถึง 500.0f
+            List<float> scaleValues = new List<float>();
+            for (float i = 10.0f; i <= 9999.0f; i += setone) scaleValues.Add((float)Math.Round(i, 1));
+
+            // 4. สร้าง NativeListItem สำหรับปรับตำแหน่ง และปรับขนาด 1:1
+            NativeListItem<float> itemX = new NativeListItem<float>("Position X", "Adjust Horizontal Position", xPositions.ToArray());
+            NativeListItem<float> itemY = new NativeListItem<float>("Position Y", "Adjust Vertical Position", yPositions.ToArray());
+
+            // ปุ่มเดียวที่ควบคุมทั้งความกว้างและความสูง
+            NativeListItem<float> itemScale = new NativeListItem<float>("Scale", "Resize Width and Height Simultaneously", scaleValues.ToArray());
+
+            // 5. ตั้งค่าอินเดกซ์เริ่มต้นให้ตรงกับค่าจริงของ UI (X=500.0f, Y=200.0f, Scale=100.0f)
+            itemX.SelectedIndex = xPositions.IndexOf(UIPositionX);
+            itemY.SelectedIndex = yPositions.IndexOf(UIPositionY);
+            itemScale.SelectedIndex = scaleValues.IndexOf(UISize);
+
+            // 6. ดักจับเหตุการณ์การเปลี่ยนค่า
+            itemX.ItemChanged += (sender, e) => {
+                float posX = itemX.SelectedItem;
+                UIPositionX = posX;
+            };
+
+            itemY.ItemChanged += (sender, e) => {
+                float posY = itemY.SelectedItem;
+                UIPositionY = posY;
+            };
+
+            // เมื่อค่า Scale เปลี่ยน ให้เซ็ตค่าทั้ง Width และ Height เป็นค่าเดียวกันทันที
+            itemScale.ItemChanged += (sender, e) => {
+                float newScale = itemScale.SelectedItem;
+                UISize = newScale;
+            };
+
             // 3. Add the checkbox to the menu
             _mainMenu.Add(modEnabledHUD);
             _mainMenu.Add(VersionHUDListItem);
@@ -405,7 +470,12 @@ namespace TDUSCSpeedometerGTAV
             _mainMenu.Add(ABSToggle);
             _mainMenu.Add(TCSToggle);
             _mainMenu.Add(selectDebugShowSubtitles);
-
+            // ใส่ไอเทมลงเมนู
+            _mainMenu.Add(itemX);
+            _mainMenu.Add(itemY);
+            _mainMenu.Add(itemScale);
+            _mainMenu.Add(selectSaveHUDPosition);
+            _mainMenu.Add(selectDefaultHUDPosition);
 
             VersionHUDListItem.ItemChanged += (sender, e) =>
             {
@@ -829,7 +899,6 @@ namespace TDUSCSpeedometerGTAV
 
             RevTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDRev, "rev_0000");
 
-
             LabelRPMDeafult = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPMDefaultName);
             
             LabelRPM_2000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2000_Name);
@@ -908,87 +977,290 @@ namespace TDUSCSpeedometerGTAV
 
         private void OnTick(object sender, EventArgs e)
         {
-
             VehicleEnterExit();
             _menuPool.Process();
             TDUSC_HUDTick();
             VehicleSlowMotionFranklin();
-
+            float setones = setone;
             BackgroundTextureImage.Dictionary = HUDBackground;
+            BackgroundTextureImage.Position = new PointF(UIPositionX, UIPositionY);
+            BackgroundTextureImage.Size = new SizeF(UISize, UISize);
+
             BackgroundTextureImage.Texture = BackgroundTextureName;
             BackgroundTextureImage2.Dictionary = HUDBackground;
+            BackgroundTextureImage2.Position = new PointF(UIPositionX, UIPositionY);
+            BackgroundTextureImage2.Size = new SizeF(UISize, UISize);
 
             ImageKMH.Dictionary = HUDBackground;
+            ImageKMH.Position = new PointF(UIPositionX, UIPositionY);
+            ImageKMH.Size = new SizeF(UISize, UISize);
+
             ImageMPH.Dictionary = HUDBackground;
+            ImageMPH.Position = new PointF(UIPositionX, UIPositionY);
+            ImageMPH.Size = new SizeF(UISize, UISize);
+
             ABSTextureImage.Texture = HUDABS;
+            ABSTextureImage.Position = new PointF(UIPositionX, UIPositionY);
+            ABSTextureImage.Size = new SizeF(UISize, UISize);
+
             TCSTextureImage.Texture = HUDTCS;
+            TCSTextureImage.Position = new PointF(UIPositionX, UIPositionY);
+            TCSTextureImage.Size = new SizeF(UISize, UISize);
+
             HandbrakeTextureImage.Dictionary = HUDBackground;
+            HandbrakeTextureImage.Position = new PointF(UIPositionX, UIPositionY);
             HandbrakeTextureImage.Texture = HUDHandbrake;
+            HandbrakeTextureImage.Size = new SizeF(UISize, UISize);
+
             DriftTextureImage.Dictionary = HUDBackground;
+            DriftTextureImage.Position = new PointF(UIPositionX, UIPositionY);
+            DriftTextureImage.Size = new SizeF(UISize, UISize);
+
             TurnSignalLeft.Texture = HUDTurnSignalLeft;
             TurnSignalRight.Texture = HUDTurnSignalRight;
             TurnSignalLeft.Dictionary = HUDBackground;
             TurnSignalRight.Dictionary = HUDBackground;
+            TurnSignalLeft.Position = new PointF(UIPositionX, UIPositionY);
+            TurnSignalRight.Position = new PointF(UIPositionX, UIPositionY);
+            TurnSignalLeft.Size = new SizeF(UISize, UISize);
+            TurnSignalRight.Size = new SizeF(UISize, UISize);
+
             speedTextureImage.Dictionary = HUDSpeed;
+            speedTextureImage.Position = new PointF(UIPositionX, UIPositionY);
+            speedTextureImage.Size = new SizeF(UISize, UISize);
+
             gearTexture.Dictionary = HUDGear;
+            gearTexture.Position = new PointF(UIPositionX, UIPositionY);
+            gearTexture.Size = new SizeF(UISize, UISize);
+
             gearTexture_Red.Dictionary = HUDGear;
+            gearTexture_Red.Position = new PointF(UIPositionX, UIPositionY);
+            gearTexture_Red.Size = new SizeF(UISize, UISize);
+
             RevTextureImage.Dictionary = HUDRev;
+            RevTextureImage.Position = new PointF(UIPositionX, UIPositionY);
+            RevTextureImage.Size = new SizeF(UISize, UISize);
 
             LabelRPMDeafult.Dictionary = HUDBackground;
+            LabelRPMDeafult.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPMDeafult.Size = new SizeF(UISize, UISize);
+
             LabelRPM_2000.Dictionary = HUDBackground;          
-            LabelRPM_2200.Dictionary = HUDBackground;          
-            LabelRPM_2400.Dictionary = HUDBackground;          
-            LabelRPM_2600.Dictionary = HUDBackground;          
-            LabelRPM_2800.Dictionary = HUDBackground;          
-            LabelRPM_3000.Dictionary = HUDBackground;          
-            LabelRPM_4000.Dictionary = HUDBackground;          
-            LabelRPM_4500.Dictionary = HUDBackground;          
-            LabelRPM_5000.Dictionary = HUDBackground;          
+            LabelRPM_2000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_2000.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_2200.Dictionary = HUDBackground;
+            LabelRPM_2200.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_2200.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_2400.Dictionary = HUDBackground;
+            LabelRPM_2400.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_2400.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_2600.Dictionary = HUDBackground;
+            LabelRPM_2600.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_2600.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_2800.Dictionary = HUDBackground;
+            LabelRPM_2800.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_2800.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_3000.Dictionary = HUDBackground;
+            LabelRPM_3000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_3000.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_4000.Dictionary = HUDBackground;
+            LabelRPM_4000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_4000.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_4500.Dictionary = HUDBackground;
+            LabelRPM_4500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_4500.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_5000.Dictionary = HUDBackground;
+            LabelRPM_5000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_5000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_5200.Dictionary = HUDBackground;
+            LabelRPM_5200.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_5200.Size = new SizeF(UISize, UISize);
+
             LabelRPM_5400.Dictionary = HUDBackground;
+            LabelRPM_5400.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_5400.Size = new SizeF(UISize, UISize);
+
             LabelRPM_5600.Dictionary = HUDBackground;
+            LabelRPM_5600.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_5600.Size = new SizeF(UISize, UISize);
+
             LabelRPM_5800.Dictionary = HUDBackground;
+            LabelRPM_5800.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_5800.Size = new SizeF(UISize, UISize);
+
             LabelRPM_6000.Dictionary = HUDBackground;
-            LabelRPM_6200.Dictionary = HUDBackground;          
-            LabelRPM_6400.Dictionary = HUDBackground;          
-            LabelRPM_6600.Dictionary = HUDBackground;          
+            LabelRPM_6000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_6000.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_6200.Dictionary = HUDBackground;
+            LabelRPM_6200.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_6200.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_6400.Dictionary = HUDBackground;
+            LabelRPM_6400.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_6400.Size = new SizeF(UISize, UISize);
+
+            LabelRPM_6600.Dictionary = HUDBackground;
+            LabelRPM_6600.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_6600.Size = new SizeF(UISize, UISize);
+
             LabelRPM_6800.Dictionary = HUDBackground;
+            LabelRPM_6800.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_6800.Size = new SizeF(UISize, UISize);
+
             LabelRPM_7000.Dictionary = HUDBackground;
+            LabelRPM_7000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_7000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_7200.Dictionary = HUDBackground;
+            LabelRPM_7200.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_7200.Size = new SizeF(UISize, UISize);
+
             LabelRPM_7400.Dictionary = HUDBackground;
+            LabelRPM_7400.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_7400.Size = new SizeF(UISize, UISize);
+
             LabelRPM_7600.Dictionary = HUDBackground;
+            LabelRPM_7600.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_7600.Size = new SizeF(UISize, UISize);
+
             LabelRPM_7800.Dictionary = HUDBackground;
+            LabelRPM_7800.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_7800.Size = new SizeF(UISize, UISize);
+
             LabelRPM_8000.Dictionary = HUDBackground;
+            LabelRPM_8000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_8000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_8200.Dictionary = HUDBackground;
+            LabelRPM_8200.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_8200.Size = new SizeF(UISize, UISize);
+
             LabelRPM_8400.Dictionary = HUDBackground;
+            LabelRPM_8400.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_8400.Size = new SizeF(UISize, UISize);
+
             LabelRPM_8600.Dictionary = HUDBackground;
+            LabelRPM_8600.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_8600.Size = new SizeF(UISize, UISize);
+
             LabelRPM_8800.Dictionary = HUDBackground;
+            LabelRPM_8800.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_8800.Size = new SizeF(UISize, UISize);
+
             LabelRPM_9000.Dictionary = HUDBackground;
+            LabelRPM_9000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_9000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_9200.Dictionary = HUDBackground;
+            LabelRPM_9200.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_9200.Size = new SizeF(UISize, UISize);
+
             LabelRPM_9400.Dictionary = HUDBackground;
+            LabelRPM_9400.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_9400.Size = new SizeF(UISize, UISize);
+
             LabelRPM_9600.Dictionary = HUDBackground;
+            LabelRPM_9600.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_9600.Size = new SizeF(UISize, UISize);
+
             LabelRPM_9800.Dictionary = HUDBackground;
+            LabelRPM_9800.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_9800.Size = new SizeF(UISize, UISize);
+
             LabelRPM_10000.Dictionary = HUDBackground;
+            LabelRPM_10000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_10000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_10500.Dictionary = HUDBackground;
+            LabelRPM_10500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_10500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_11000.Dictionary = HUDBackground;
+            LabelRPM_11000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_11000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_11500.Dictionary = HUDBackground;
+            LabelRPM_11500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_11500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_12000.Dictionary = HUDBackground;
+            LabelRPM_12000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_12000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_12500.Dictionary = HUDBackground;
+            LabelRPM_12500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_12500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_13000.Dictionary = HUDBackground;
+            LabelRPM_13000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_13000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_13500.Dictionary = HUDBackground;
+            LabelRPM_13500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_13500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_14000.Dictionary = HUDBackground;
+            LabelRPM_14000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_14000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_14500.Dictionary = HUDBackground;
+            LabelRPM_14500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_14500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_15000.Dictionary = HUDBackground;
+            LabelRPM_15000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_15000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_15500.Dictionary = HUDBackground;
+            LabelRPM_15500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_15500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_16000.Dictionary = HUDBackground;
+            LabelRPM_16000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_16000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_16500.Dictionary = HUDBackground;
+            LabelRPM_16500.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_16500.Size = new SizeF(UISize, UISize);
+
             LabelRPM_17000.Dictionary = HUDBackground;
+            LabelRPM_17000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_17000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_18000.Dictionary = HUDBackground;
+            LabelRPM_18000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_18000.Size = new SizeF(UISize, UISize);
+
             LabelRPM_19000.Dictionary = HUDBackground;
+            LabelRPM_19000.Position = new PointF(UIPositionX, UIPositionY);
+            LabelRPM_19000.Size = new SizeF(UISize, UISize);
 
             ABSTextureImage.Dictionary = HUDBackground;
             TCSTextureImage.Dictionary = HUDBackground;
+
+
             RevEngineOffImage.Dictionary = HUDRev;
+            RevEngineOffImage.Position = new PointF(UIPositionX, UIPositionY);
+            RevEngineOffImage.Size = new SizeF(UISize, UISize);
+
+            HeadlightsImage.Position = new PointF(UIPositionX, UIPositionY);
+            HeadlightsImage.Size = new SizeF(UISize, UISize);
+
+            ThrottleImageHUD.Position = new PointF(UIPositionX, UIPositionY);
+            ThrottleImageHUD.Size = new SizeF(UISize, UISize);
+
+            BrakeImageHUD.Position = new PointF(UIPositionX, UIPositionY);
+            BrakeImageHUD.Size = new SizeF(UISize, UISize);
 
             HeadlightsImage.Color = Color.FromArgb(headlightToggle, 255, 255, 255);
 
