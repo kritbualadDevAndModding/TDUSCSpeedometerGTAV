@@ -3,4 +3,4 @@
 GTA V Mod Test Drive Unlimited Solar Crown HUD
 
 Download it here :
-https://www.gta5-mods.com/scripts/tdu-solar-crown-speedometer-hud#comment-2481979
+https://www.gta5-mods.com/scripts/tdu-solar-crown-speedometer-hud
