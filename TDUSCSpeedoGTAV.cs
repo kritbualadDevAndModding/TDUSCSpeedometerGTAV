@@ -23,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "1.3";
+        private string version = "1.4";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -137,6 +137,16 @@ namespace TDUSCSpeedometerGTAV
         // Set LabelRPM
         private ScaledTexture LabelRPMDeafult;
         private const string LabelRPMDefaultName = "rpm_9000";
+
+        // Texture Lock Speed
+        private ScaledTexture HUDLockSpeed;
+        private string HUDLockSpeed_Dict = "!TDUSCReleaseHUDSpeedLock";
+        private string HUDLockSpeed_Name = "Speed_Lock_50";
+
+        // Texture Enabled Lock Speed
+        private ScaledTexture HUDEnableLockSpeed;
+        private string HUDEnableLockSpeed_Dict = "!TDUSCReleaseHUDSpeedLock";
+        private string HUDEnableLockSpeed_Name = "LockSpeed";
 
         private ScaledTexture LabelRPM_2000;
         private ScaledTexture LabelRPM_2200;
@@ -344,6 +354,16 @@ namespace TDUSCSpeedometerGTAV
         private bool isHUDThrottleAndBrakeSeason5;
 
         private float setone = 1;
+
+        // Update Lock Speed
+
+        private bool isLimiterSpeed = false;
+        private float maxSpeedKMH;
+        private Vehicle lastDrivenVehicle = null;
+
+        private bool LockSpeedSeason5Only;
+
+        private int selectLockSpeed;
         public TDUSCSpeedoGTAV()
         {
             LoadConfigData();
@@ -390,6 +410,12 @@ namespace TDUSCSpeedometerGTAV
 
             NativeItem selectSaveHUDPosition = new NativeItem("Save Position and Scale HUD");
             NativeItem selectDefaultHUDPosition = new NativeItem("Default HUD Position and Scale", "Default Preset\nPosition X = 1570\nPosition Y = 725\nScale = 295");
+
+            NativeCheckboxItem setEnabledLockSpeed = new NativeCheckboxItem("Enabled Lock Speed", false);
+
+            var itemsListLockSpeed = new List<string> { "50", "55", "60", "65", "70" ,"75","80","85","90","95","100","105","110" , "115","120","125","130","135","140","145","150","155","160","165","170","175","180","185","190","195","200","10","15","20","25","30","35","40","45"};
+            NativeListItem<string> LockSpeedListItem = new NativeListItem<string>("Set Lock Speed", "Please Enabled Lock Speed first in order to use this.", itemsListLockSpeed.ToArray());
+            LockSpeedListItem.SelectedIndex = selectLockSpeed;
 
             selectSaveHUDPosition.Activated += (sender, e) =>
             {
@@ -476,6 +502,201 @@ namespace TDUSCSpeedometerGTAV
             _mainMenu.Add(itemScale);
             _mainMenu.Add(selectSaveHUDPosition);
             _mainMenu.Add(selectDefaultHUDPosition);
+            _mainMenu.Add(setEnabledLockSpeed);
+            _mainMenu.Add(LockSpeedListItem);
+
+
+            setEnabledLockSpeed.CheckboxChanged += (sender, e) =>
+            {
+                bool statusEnabled = setEnabledLockSpeed.Checked;
+                selectLockSpeed = LockSpeedListItem.SelectedIndex;
+
+                // แก้บัค สำหรับเปิด enabled
+                switch (selectLockSpeed)
+                {
+                    case 0:
+                        HUDLockSpeed_Name = "Speed_Lock_50";
+                        maxSpeedKMH = 50;
+                        break;
+                }
+                Vehicle currentVehicle = Game.Player.Character.CurrentVehicle;
+                if (statusEnabled)
+                {
+
+                    isLimiterSpeed = true;
+
+                }
+                else
+                {
+                    isLimiterSpeed = false;
+                }
+            };
+
+
+            LockSpeedListItem.ItemChanged += (sender, e) =>
+            {
+                selectLockSpeed = LockSpeedListItem.SelectedIndex;
+
+                switch (selectLockSpeed)
+                {
+                    case 0:
+                        HUDLockSpeed_Name = "Speed_Lock_50";
+                        maxSpeedKMH = 50;
+                        break;
+                    case 1:
+                        HUDLockSpeed_Name = "Speed_Lock_55";
+                        maxSpeedKMH = 55;
+                        break;
+                    case 2:
+                        HUDLockSpeed_Name = "Speed_Lock_60";
+                        maxSpeedKMH = 60;
+                        break;
+                    case 3:
+                        HUDLockSpeed_Name = "Speed_Lock_65";
+                        maxSpeedKMH = 65;
+                        break;
+                    case 4:
+                        HUDLockSpeed_Name = "Speed_Lock_70";
+                        maxSpeedKMH = 70;
+                        break;
+                    case 5:
+                        HUDLockSpeed_Name = "Speed_Lock_75";
+                        maxSpeedKMH = 75;
+                        break;
+                    case 6:
+                        HUDLockSpeed_Name = "Speed_Lock_80";
+                        maxSpeedKMH = 80;
+                        break;
+                    case 7:
+                        HUDLockSpeed_Name = "Speed_Lock_85";
+                        maxSpeedKMH = 85;
+                        break;
+                    case 8:
+                        HUDLockSpeed_Name = "Speed_Lock_90";
+                        maxSpeedKMH = 90;
+                        break;
+                    case 9:
+                        HUDLockSpeed_Name = "Speed_Lock_95";
+                        maxSpeedKMH = 95;
+                        break;
+                    case 10:
+                        HUDLockSpeed_Name = "Speed_Lock_100";
+                        maxSpeedKMH = 100;
+                        break;
+                    case 11:
+                        HUDLockSpeed_Name = "Speed_Lock_105";
+                        maxSpeedKMH = 105;
+                        break;
+                    case 12:
+                        HUDLockSpeed_Name = "Speed_Lock_110";
+                        maxSpeedKMH = 110;
+                        break;
+                    case 13:
+                        HUDLockSpeed_Name = "Speed_Lock_115";
+                        maxSpeedKMH = 115;
+                        break;
+                    case 14:
+                        HUDLockSpeed_Name = "Speed_Lock_120";
+                        maxSpeedKMH = 120;
+                        break;
+                    case 15:
+                        HUDLockSpeed_Name = "Speed_Lock_125";
+                        maxSpeedKMH = 125;
+                        break;
+                    case 16:
+                        HUDLockSpeed_Name = "Speed_Lock_130";
+                        maxSpeedKMH = 130;
+                        break;
+                    case 17:
+                        HUDLockSpeed_Name = "Speed_Lock_135";
+                        maxSpeedKMH = 135;
+                        break;
+                    case 18:
+                        HUDLockSpeed_Name = "Speed_Lock_140";
+                        maxSpeedKMH = 140;
+                        break;
+                    case 19:
+                        HUDLockSpeed_Name = "Speed_Lock_145";
+                        maxSpeedKMH = 145;
+                        break;
+                    case 20:
+                        HUDLockSpeed_Name = "Speed_Lock_150";
+                        maxSpeedKMH = 150;
+                        break;
+                    case 21:
+                        HUDLockSpeed_Name = "Speed_Lock_155";
+                        maxSpeedKMH = 155;
+                        break;
+                    case 22:
+                        HUDLockSpeed_Name = "Speed_Lock_160";
+                        maxSpeedKMH = 160;
+                        break;
+                    case 23:
+                        HUDLockSpeed_Name = "Speed_Lock_165";
+                        maxSpeedKMH = 165;
+                        break;
+                    case 24:
+                        HUDLockSpeed_Name = "Speed_Lock_170";
+                        maxSpeedKMH = 170;
+                        break;
+                    case 25:
+                        HUDLockSpeed_Name = "Speed_Lock_175";
+                        maxSpeedKMH = 175;
+                        break;
+                    case 26:
+                        HUDLockSpeed_Name = "Speed_Lock_180";
+                        maxSpeedKMH = 180;
+                        break;
+                    case 27:
+                        HUDLockSpeed_Name = "Speed_Lock_185";
+                        maxSpeedKMH = 185;
+                        break;
+                    case 28:
+                        HUDLockSpeed_Name = "Speed_Lock_190";
+                        maxSpeedKMH = 190;
+                        break;
+                    case 29:
+                        HUDLockSpeed_Name = "Speed_Lock_195";
+                        maxSpeedKMH = 195;
+                        break;
+                    case 30:
+                        HUDLockSpeed_Name = "Speed_Lock_200";
+                        maxSpeedKMH = 200;
+                        break;
+                    case 31:
+                        HUDLockSpeed_Name = "Speed_Lock_10";
+                        maxSpeedKMH = 10;
+                        break;
+                    case 32:
+                        HUDLockSpeed_Name = "Speed_Lock_15";
+                        maxSpeedKMH = 15;
+                        break;
+                    case 33:
+                        HUDLockSpeed_Name = "Speed_Lock_20";
+                        maxSpeedKMH = 20;
+                        break;
+                    case 34:
+                        HUDLockSpeed_Name = "Speed_Lock_25";
+                        maxSpeedKMH = 25;
+                        break;
+                    case 35:
+                        HUDLockSpeed_Name = "Speed_Lock_30";
+                        maxSpeedKMH = 30;
+                        break;
+                    case 36:
+                        HUDLockSpeed_Name = "Speed_Lock_35";
+                        maxSpeedKMH = 35;
+                        break;
+                    case 37:
+                        HUDLockSpeed_Name = "Speed_Lock_40";
+                        maxSpeedKMH = 40;
+                        break;
+                    case 38:
+                        HUDLockSpeed_Name = "Speed_Lock_45";
+                        maxSpeedKMH = 45;
+                        break;
+                }
+            };
 
             VersionHUDListItem.ItemChanged += (sender, e) =>
             {
@@ -496,6 +717,7 @@ namespace TDUSCSpeedometerGTAV
                     HUDRev = "!TDUSCDemoHUDRev";
                     headlightToggle = 0;
                     isHUDThrottleAndBrakeSeason5 = false;
+                    LockSpeedSeason5Only = false;
                 }
                 if (VersionHUDListItem.SelectedIndex == 1)
                 {
@@ -514,6 +736,7 @@ namespace TDUSCSpeedometerGTAV
                     HUDRev = "!TDUSCReleaseHUDRev";
                     headlightToggle = 0;
                     isHUDThrottleAndBrakeSeason5 = false;
+                    LockSpeedSeason5Only = false;
                 }
                 if (VersionHUDListItem.SelectedIndex == 2)
                 {
@@ -526,12 +749,13 @@ namespace TDUSCSpeedometerGTAV
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
                     HUDGear = "!TDUSCReleaseHUDGearSeason5";
-                    HUDHandbrake = "handbrake";
+                    HUDHandbrake = "handbrake_season5";
                     HUDTurnSignalLeft = "turnleft";
                     HUDTurnSignalRight = "turnright";
                     HUDRev = "!TDUSCReleaseHUDRevSeason5";
                     headlightToggle = 255;
                     isHUDThrottleAndBrakeSeason5 = false;
+                    LockSpeedSeason5Only = true;
                 }
                 if (VersionHUDListItem.SelectedIndex == 3)
                 {
@@ -544,12 +768,13 @@ namespace TDUSCSpeedometerGTAV
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
                     HUDGear = "!TDUSCReleaseHUDGearSeason5";
-                    HUDHandbrake = "handbrake";
+                    HUDHandbrake = "handbrake_season5";
                     HUDTurnSignalLeft = "turnleft";
                     HUDTurnSignalRight = "turnright";
                     HUDRev = "!TDUSCReleaseHUDRev";
                     headlightToggle = 255;
                     isHUDThrottleAndBrakeSeason5 = true;
+                    LockSpeedSeason5Only = true;
                 }
             };
             UnitsListItem.ItemChanged += (sender, e) =>
@@ -721,18 +946,22 @@ namespace TDUSCSpeedometerGTAV
                 case 0:
                     isDriftHUD = true;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
+                    LockSpeedSeason5Only = false;
                     break;
                 case 1:
                     isDriftHUD = false;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
+                    LockSpeedSeason5Only = false;
                     break;
                 case 2:
                     isDriftHUD = false;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
+                    LockSpeedSeason5Only = true;
                     break;
                 case 3:
                     isDriftHUD = false;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 3);
+                    LockSpeedSeason5Only = true;
                     break;
             }
 
@@ -793,6 +1022,7 @@ namespace TDUSCSpeedometerGTAV
                     HUDRev = "!TDUSCDemoHUDRev";
                     headlightToggle = 0;
                     isHUDThrottleAndBrakeSeason5 = false;
+                    LockSpeedSeason5Only = false;
                     break;
                 case 1:
                     isDriftHUD = false;
@@ -809,6 +1039,7 @@ namespace TDUSCSpeedometerGTAV
                     HUDRev = "!TDUSCReleaseHUDRev";
                     headlightToggle = 0;
                     isHUDThrottleAndBrakeSeason5 = false;
+                    LockSpeedSeason5Only = false;
                     break;
                 case 2:
                     isDriftHUD = false;
@@ -819,12 +1050,13 @@ namespace TDUSCSpeedometerGTAV
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
                     HUDGear = "!TDUSCReleaseHUDGearSeason5";
-                    HUDHandbrake = "handbrake";
+                    HUDHandbrake = "handbrake_season5";
                     HUDTurnSignalLeft = "turnleft";
                     HUDTurnSignalRight = "turnright";
                     HUDRev = "!TDUSCReleaseHUDRevSeason5";
                     headlightToggle = 255;
                     isHUDThrottleAndBrakeSeason5 = false;
+                    LockSpeedSeason5Only = true;
                     break;
                 case 3:
                     isDriftHUD = false;
@@ -835,12 +1067,13 @@ namespace TDUSCSpeedometerGTAV
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
                     HUDGear = "!TDUSCReleaseHUDGearSeason5";
-                    HUDHandbrake = "handbrake";
+                    HUDHandbrake = "handbrake_season5";
                     HUDTurnSignalLeft = "turnleft";
                     HUDTurnSignalRight = "turnright";
                     HUDRev = "!TDUSCReleaseHUDRev";
                     headlightToggle = 255;
                     isHUDThrottleAndBrakeSeason5 = true;
+                    LockSpeedSeason5Only = true;
                     break;
             }
             
@@ -966,10 +1199,12 @@ namespace TDUSCSpeedometerGTAV
             gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
             gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
 
-            HeadlightsImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDBackground", "Lighting");
+            HeadlightsImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDBackground", "Lighting_season5");
             ThrottleImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalAccelerationSeason5V2", "_000");
             BrakeImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalBrakeSeason5V2", "_000");
 
+            HUDLockSpeed = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDLockSpeed_Dict, HUDLockSpeed_Name);
+            HUDEnableLockSpeed = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDEnableLockSpeed_Dict, HUDEnableLockSpeed_Name);
         }
       //  private bool categorySpeedoEnabled;
 
@@ -980,8 +1215,17 @@ namespace TDUSCSpeedometerGTAV
             VehicleEnterExit();
             _menuPool.Process();
             TDUSC_HUDTick();
-            VehicleSlowMotionFranklin();
             float setones = setone;
+
+            HUDEnableLockSpeed.Dictionary = HUDBackground;
+            HUDEnableLockSpeed.Texture = HUDEnableLockSpeed_Name;
+
+            HUDLockSpeed.Dictionary = HUDLockSpeed_Dict;
+            HUDLockSpeed.Texture = HUDLockSpeed_Name;
+
+            HUDLockSpeed.Position = new PointF(UIPositionX, UIPositionY);
+            HUDLockSpeed.Size = new SizeF(UISize, UISize);
+
             BackgroundTextureImage.Dictionary = HUDBackground;
             BackgroundTextureImage.Position = new PointF(UIPositionX, UIPositionY);
             BackgroundTextureImage.Size = new SizeF(UISize, UISize);
@@ -1380,6 +1624,11 @@ namespace TDUSCSpeedometerGTAV
                     if (statusHUD && playerPed != null && playerPed.IsInVehicle())
                     {
                         Vehicle vehicleStatus = playerPed.CurrentVehicle;
+
+                        // แปลงความเร็วปัจจุบันของรถจาก m/s เป็น KM/H เพื่อใช้อ้างอิง
+                        float currentSpeedKmh = vehicleStatus.Speed * isSwitchUnits;
+
+                        
 
                         // Turn on headlights automatically if desired
                         if (vehicleStatus.AreHighBeamsOn)
@@ -2403,7 +2652,6 @@ namespace TDUSCSpeedometerGTAV
                                 }
                             }
 
-                            //   GTA.UI.Screen.ShowSubtitle($"{currentRPM}");
                             // Ensure the player is actually in a vehicle
                             if (currentVehicle != null && currentVehicle.Exists())
                             {
@@ -2776,6 +3024,25 @@ namespace TDUSCSpeedometerGTAV
                                     ThrottleImageHUD.Draw();
                                     BrakeImageHUD.Draw();
                                 }
+
+                                if (LockSpeedSeason5Only)
+                                {
+                                    if (isLimiterSpeed)
+                                    {
+                                        HUDLockSpeed.Draw();
+                                        HUDEnableLockSpeed.Draw();
+                                        float speedMetersPerSecond = maxSpeedKMH / isSwitchUnits;
+                                        Function.Call(Hash.SET_ENTITY_MAX_SPEED, veh, speedMetersPerSecond);
+                                    }
+                                    else if (!isLimiterSpeed)
+                                    {
+                                        // 1. ทลายกำแพงความเร็วให้รถวิ่งได้เต็มสมรรถนะเดิมของ Handling 
+                                        Function.Call(Hash.SET_ENTITY_MAX_SPEED, veh, 500.0f);
+
+                                        // 2. รีเซ็ตแรงบิดและกลไกเกียร์กลับสู่ค่าดีฟอลต์ดั้งเดิม (เปิดทางให้สกิลทำงานได้สมบูรณ์)
+                                        Function.Call(Hash.MODIFY_VEHICLE_TOP_SPEED, veh, 1.0f);
+                                    }
+                                }
                             }
                         }
                     }
@@ -2860,34 +3127,6 @@ namespace TDUSCSpeedometerGTAV
                 statusHUD = false;
                 _lastVehicle = null;
                 _wasInVehicle = false;
-            }
-        }
-
-        private void VehicleSlowMotionFranklin()
-        {
-            Player player = Game.Player;
-            Ped playerPed = player.Character;
-
-            // 1. Check if the player is Franklin
-            // Franklin's model hash can be verified via Hash.Michael, Hash.Franklin, Hash.Trevor
-            if ((PedHash)playerPed.Model.Hash == PedHash.Franklin)
-            {
-                // 2. Check if Franklin is currently driving a vehicle
-                if (playerPed.IsInVehicle())
-                {
-                    // 3. Check if the special ability is active
-                    // Native.Function.Call returns true if the special ability meter is active/draining
-                    bool isAbilityActive = Function.Call<bool>(Hash.IS_SPECIAL_ABILITY_ACTIVE, player.Handle);
-
-                    if (isAbilityActive)
-                    {
-                        // Franklin Slow Car True
-                    }
-                    else
-                    {
-                        // Franklin Slow Car False
-                    }
-                }
             }
         }
 
