@@ -23,7 +23,7 @@ namespace TDUSCSpeedometerGTAV
     public class TDUSCSpeedoGTAV : Script
     {
 
-        private string version = "1.4";
+        private string version = "1.5";
         private string credits = "kritbualad";
 
         public static Color SpriteColor = Color.FromArgb(255, 255, 255, 255);
@@ -71,10 +71,8 @@ namespace TDUSCSpeedometerGTAV
         /* สำหรับทำงานผ่าน ytd update\update.rpf\x64\textures\script_txds.rpf */
         private ScaledTexture gearTexture;
         private ScaledTexture gearTexture_Red;
-        private ScaledTexture gearTexture_Release;
-        private ScaledTexture gearTexture_Release_Red;
-        private ScaledTexture gearTexture_Season5;
-        private ScaledTexture gearTexture_Season5_Red;
+        private ScaledTexture gearTexture_Automatic;
+        private ScaledTexture gearTexture_Red_Automatic;
         private int lastGear = -1;
         private bool wasNeutral = false;
 
@@ -84,6 +82,7 @@ namespace TDUSCSpeedometerGTAV
 
         private string HUDBackground;
         private string BackgroundTextureName;
+        private string BackgroundTextureNameUIFixed;
         private string HUDHandbrake;
         private string HUDTurnSignalLeft;
         private string HUDTurnSignalRight;
@@ -92,17 +91,25 @@ namespace TDUSCSpeedometerGTAV
         private string HUDSpeed;
         private string HUDABS;
         private string HUDTCS;
-        
+
         private ScaledTexture BackgroundTextureImage;
         private ScaledTexture BackgroundTextureImage2;
         private const string BackgroundTextureName2 = "background2";
 
-        
-          private ScaledTexture ImageKMH;
-          private ScaledTexture ImageMPH;
+        private ScaledTexture ImageKMH;
+        private ScaledTexture ImageMPH;
+
+        private ScaledTexture ImageKNOTS;
 
 
+        private ScaledTexture ImageSpeedBoat;
+        private string ImageSpeedBoatName = "speed_120";
 
+        private ScaledTexture ImageSpeedPlanes;
+        private const string ImageSpeedPlanesName = "speed_160";
+
+
+        private ScaledTexture ImageTextPlaneSeason5V2;
 
         private ScaledTexture DriftTextureImage;
         private const string DriftTextureName = "Drift";
@@ -111,9 +118,12 @@ namespace TDUSCSpeedometerGTAV
 
 
         private ScaledTexture speedTextureImage;
+        private ScaledTexture speedTextureImageKnots;
         private const string SpeedBaseTextureName = "speed_";
 
         private ScaledTexture RevTextureImage;
+        private ScaledTexture RevTextureImageSpeedPlanes;
+        private ScaledTexture RevTextureImageSpeedBoatsSameCars;
         private const string RevBaseTextureName = "rev_";
 
         private ScaledTexture ABSTextureImage;
@@ -133,6 +143,8 @@ namespace TDUSCSpeedometerGTAV
         private bool TurnSignalLeft_Enabled;
 
         private bool TurnSignalRight_Enabled;
+
+        private ScaledTexture SpeedometerBackgroundUIFixed;
 
         // Set LabelRPM
         private ScaledTexture LabelRPMDeafult;
@@ -324,6 +336,7 @@ namespace TDUSCSpeedometerGTAV
 
         private string LabelRPMCategory;
 
+        private int currentSpeedText;
 
         // Set RPM
         private int SetRPM;
@@ -337,13 +350,13 @@ namespace TDUSCSpeedometerGTAV
 
         private string activeTextureKMHLanguageName;
         private string activeTextureMPHLanguageName;
-        private List<string> ImageKMHLanguage = new List<string> { "kmh" ,"kmh_DenmarkNorway","kmh_Nederlands","kmh_Russian","kmh_Turkish","kmh_Ukriane","kmh_Vietnam"};
+        private List<string> ImageKMHLanguage = new List<string> { "kmh", "kmh_DenmarkNorway", "kmh_Nederlands", "kmh_Russian", "kmh_Turkish", "kmh_Ukriane", "kmh_Vietnam" };
         private List<string> ImageMPHLanguage = new List<string> { "mph", "mph", "mph_Nederlands", "mph_Russian", "mph_Turkish", "mph_Ukriane", "mph_Vietnam" };
 
         // 2. ชุดข้อมูลชื่อไฟล์ .ytd (Texture Dictionary) ที่เรียงลำดับให้ตรงกัน
         private List<string> textureDicts = new List<string> { "tdu_demo_dict", "tdu_release_dict", "tdu_season5_dict" };
 
-        private List<string> ImageUseKMHSettings = new List<string> { "KM/H", "MPH"};
+        private List<string> ImageUseKMHSettings = new List<string> { "KM/H", "MPH" };
 
         private string activeUseKMH;
 
@@ -364,6 +377,21 @@ namespace TDUSCSpeedometerGTAV
         private bool LockSpeedSeason5Only;
 
         private int selectLockSpeed;
+
+        private bool isHUDThrottleReverseThrustMenuSelect;
+        private bool isHUDThrottleReverseThrust;
+
+        private float currentSpeedKnots;
+        private float minSpeedKnotsPlane = 0f;
+        private float maxSpeedKnotsPlane = 159f;
+
+        private float minSpeedKnotsBoats = 0f;
+        private float maxSpeedKnotsBoats = 119f;
+
+        private string currentSpeedPlanes;
+        private float currentSpeedBoats;
+        private string currentSpeedImageBoats;
+
         public TDUSCSpeedoGTAV()
         {
             LoadConfigData();
@@ -389,17 +417,17 @@ namespace TDUSCSpeedometerGTAV
             _menuPool.Add(_mainMenu);
 
             // 2. Create the Checkbox Item (Boolean toggle)
-            NativeCheckboxItem modEnabledHUD = new NativeCheckboxItem("Mod Enabled", "Mod Show and Hide HUD for Test Drive Unlimited Solar Crown Speedometer" , isMainHUDModEnabled);
+            NativeCheckboxItem modEnabledHUD = new NativeCheckboxItem("Mod Enabled", "Mod Show and Hide HUD for Test Drive Unlimited Solar Crown Speedometer", isMainHUDModEnabled);
             NativeCheckboxItem ABSToggle = new NativeCheckboxItem("ABS HUD", isABSHUD);
             NativeCheckboxItem TCSToggle = new NativeCheckboxItem("TCS HUD", isTCSHUD);
 
             var itemsListUnits = new List<string> { "Imperial", "Metric" };
-            NativeListItem<string> UnitsListItem = new NativeListItem<string>("Units","Metric = KM/H\nImperial = MPH",itemsListUnits.ToArray());
+            NativeListItem<string> UnitsListItem = new NativeListItem<string>("Units", "Metric = KM/H\nImperial = MPH", itemsListUnits.ToArray());
             UnitsListItem.SelectedIndex = UseKMH;
 
-            var itemsListVersionHUD = new List<string> { "Demo", "Release", "Season 5 V1" , "Season 5 V2" };
-            NativeListItem<string> VersionHUDListItem = new NativeListItem<string>("Version HUD","Select HUD",itemsListVersionHUD.ToArray());
-            
+            var itemsListVersionHUD = new List<string> { "Demo", "Release", "Season 5 V1", "Season 5 V2" };
+            NativeListItem<string> VersionHUDListItem = new NativeListItem<string>("Version HUD", "Select HUD", itemsListVersionHUD.ToArray());
+
             VersionHUDListItem.SelectedIndex = SelectVersionHUD;
 
             NativeItem selectDebugShowSubtitles = new NativeItem("Show Debug Name Cars");
@@ -413,7 +441,7 @@ namespace TDUSCSpeedometerGTAV
 
             NativeCheckboxItem setEnabledLockSpeed = new NativeCheckboxItem("Enabled Lock Speed", false);
 
-            var itemsListLockSpeed = new List<string> { "50", "55", "60", "65", "70" ,"75","80","85","90","95","100","105","110" , "115","120","125","130","135","140","145","150","155","160","165","170","175","180","185","190","195","200","10","15","20","25","30","35","40","45"};
+            var itemsListLockSpeed = new List<string> { "50", "55", "60", "65", "70", "75", "80", "85", "90", "95", "100", "105", "110", "115", "120", "125", "130", "135", "140", "145", "150", "155", "160", "165", "170", "175", "180", "185", "190", "195", "200", "10", "15", "20", "25", "30", "35", "40", "45" };
             NativeListItem<string> LockSpeedListItem = new NativeListItem<string>("Set Lock Speed", "Please Enabled Lock Speed first in order to use this.", itemsListLockSpeed.ToArray());
             LockSpeedListItem.SelectedIndex = selectLockSpeed;
 
@@ -424,7 +452,7 @@ namespace TDUSCSpeedometerGTAV
                 config.SetValue<float>("Size_HUD", "Scale", UISize);
                 config.Save();
 
-                GTA.UI.Screen.ShowSubtitle("Position and Scale HUD Saved!" , 4000);
+                GTA.UI.Screen.ShowSubtitle("Position and Scale HUD Saved!", 4000);
             };
             selectDefaultHUDPosition.Activated += (sender, e) =>
             {
@@ -437,19 +465,19 @@ namespace TDUSCSpeedometerGTAV
                 config.Save();
                 GTA.UI.Screen.ShowSubtitle("Position and Scale HUD have been reset to default!", 4000);
             };
-                /*
-                 * Default HUD
-                [Position_HUD]
-                PosX = 1570
-                PosY = 725
+            /*
+             * Default HUD
+            [Position_HUD]
+            PosX = 1570
+            PosY = 725
 
-                [Size_HUD]
-                Scale = 295
+            [Size_HUD]
+            Scale = 295
 
-                */
+            */
 
             // 2. เตรียมรายการตัวเลข float สำหรับตำแหน่ง X และ Y
-                List<float> xPositions = new List<float>();
+            List<float> xPositions = new List<float>();
             for (float i = 0.0f; i <= 9999.0f; i += setone) xPositions.Add((float)Math.Round(i, 1));
 
             List<float> yPositions = new List<float>();
@@ -472,18 +500,21 @@ namespace TDUSCSpeedometerGTAV
             itemScale.SelectedIndex = scaleValues.IndexOf(UISize);
 
             // 6. ดักจับเหตุการณ์การเปลี่ยนค่า
-            itemX.ItemChanged += (sender, e) => {
+            itemX.ItemChanged += (sender, e) =>
+            {
                 float posX = itemX.SelectedItem;
                 UIPositionX = posX;
             };
 
-            itemY.ItemChanged += (sender, e) => {
+            itemY.ItemChanged += (sender, e) =>
+            {
                 float posY = itemY.SelectedItem;
                 UIPositionY = posY;
             };
 
             // เมื่อค่า Scale เปลี่ยน ให้เซ็ตค่าทั้ง Width และ Height เป็นค่าเดียวกันทันที
-            itemScale.ItemChanged += (sender, e) => {
+            itemScale.ItemChanged += (sender, e) =>
+            {
                 float newScale = itemScale.SelectedItem;
                 UISize = newScale;
             };
@@ -707,6 +738,7 @@ namespace TDUSCSpeedometerGTAV
                     config.Save();
                     HUDBackground = "!TDUSCDemoHUDBackground";
                     BackgroundTextureName = "background";
+                    BackgroundTextureNameUIFixed = "background_UIFixed";
                     HUDABS = "ABS";
                     HUDTCS = "TCS";
                     HUDSpeed = "!TDUSCDemoHUDSpeed";
@@ -718,6 +750,7 @@ namespace TDUSCSpeedometerGTAV
                     headlightToggle = 0;
                     isHUDThrottleAndBrakeSeason5 = false;
                     LockSpeedSeason5Only = false;
+                    isHUDThrottleReverseThrustMenuSelect = false;
                 }
                 if (VersionHUDListItem.SelectedIndex == 1)
                 {
@@ -726,6 +759,7 @@ namespace TDUSCSpeedometerGTAV
                     config.Save();
                     HUDBackground = "!TDUSCReleaseHUDBackground";
                     BackgroundTextureName = "background";
+                    BackgroundTextureNameUIFixed = "background_UIFixed";
                     HUDABS = "ABS";
                     HUDTCS = "TCS";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
@@ -737,6 +771,7 @@ namespace TDUSCSpeedometerGTAV
                     headlightToggle = 0;
                     isHUDThrottleAndBrakeSeason5 = false;
                     LockSpeedSeason5Only = false;
+                    isHUDThrottleReverseThrustMenuSelect = false;
                 }
                 if (VersionHUDListItem.SelectedIndex == 2)
                 {
@@ -745,6 +780,7 @@ namespace TDUSCSpeedometerGTAV
                     config.Save();
                     HUDBackground = "!TDUSCReleaseHUDBackground";
                     BackgroundTextureName = "background_Season5_V1";
+                    BackgroundTextureNameUIFixed = "background_Season5_UIFixed";
                     HUDABS = "ABS_Season5";
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
@@ -756,6 +792,7 @@ namespace TDUSCSpeedometerGTAV
                     headlightToggle = 255;
                     isHUDThrottleAndBrakeSeason5 = false;
                     LockSpeedSeason5Only = true;
+                    isHUDThrottleReverseThrustMenuSelect = false;
                 }
                 if (VersionHUDListItem.SelectedIndex == 3)
                 {
@@ -764,6 +801,7 @@ namespace TDUSCSpeedometerGTAV
                     config.Save();
                     HUDBackground = "!TDUSCReleaseHUDBackground";
                     BackgroundTextureName = "background_Season5_V2";
+                    BackgroundTextureNameUIFixed = "background_Season5_UIFixed";
                     HUDABS = "ABS_Season5";
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
@@ -775,6 +813,7 @@ namespace TDUSCSpeedometerGTAV
                     headlightToggle = 255;
                     isHUDThrottleAndBrakeSeason5 = true;
                     LockSpeedSeason5Only = true;
+                    isHUDThrottleReverseThrustMenuSelect = true;
                 }
             };
             UnitsListItem.ItemChanged += (sender, e) =>
@@ -784,7 +823,7 @@ namespace TDUSCSpeedometerGTAV
                 activeUseKMH = ImageUseKMHSettings[currentIndex];
 
                 UseKMH = currentIndex;
-                switch(currentIndex)
+                switch (currentIndex)
                 {
                     case 1:
                         isSwitchUnits = speedKMH;
@@ -813,10 +852,10 @@ namespace TDUSCSpeedometerGTAV
                 // อัปเดตเปลี่ยนเฉพาะค่า "Texture Name" ไปตามลำดับที่เลือก
                 activeTextureKMHLanguageName = ImageKMHLanguage[currentIndex];
                 ImageKMH.Texture = activeTextureKMHLanguageName;
-                
+
                 activeTextureMPHLanguageName = ImageMPHLanguage[currentIndex];
                 ImageMPH.Texture = activeTextureMPHLanguageName;
-                
+
                 switch (currentIndex)
                 {
                     case 0:
@@ -868,7 +907,7 @@ namespace TDUSCSpeedometerGTAV
             ABSToggle.CheckboxChanged += (sender, e) =>
             {
                 bool Enabled = ABSToggle.Checked;
-                if(Enabled)
+                if (Enabled)
                 {
                     isABSHUD = true;
                     config.SetValue<bool>("HUD_SETTINGS", "ABSHUD", true);
@@ -884,7 +923,7 @@ namespace TDUSCSpeedometerGTAV
             TCSToggle.CheckboxChanged += (sender, e) =>
             {
                 bool Enabled = TCSToggle.Checked;
-                if(Enabled)
+                if (Enabled)
                 {
                     isTCSHUD = true;
                     config.SetValue<bool>("HUD_SETTINGS", "TCSHUD", true);
@@ -947,21 +986,25 @@ namespace TDUSCSpeedometerGTAV
                     isDriftHUD = true;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
                     LockSpeedSeason5Only = false;
+                    isHUDThrottleReverseThrustMenuSelect = false;
                     break;
                 case 1:
                     isDriftHUD = false;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
                     LockSpeedSeason5Only = false;
+                    isHUDThrottleReverseThrustMenuSelect = false;
                     break;
                 case 2:
                     isDriftHUD = false;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
                     LockSpeedSeason5Only = true;
+                    isHUDThrottleReverseThrustMenuSelect = false;
                     break;
                 case 3:
                     isDriftHUD = false;
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 3);
                     LockSpeedSeason5Only = true;
+                    isHUDThrottleReverseThrustMenuSelect = true;
                     break;
             }
 
@@ -981,7 +1024,7 @@ namespace TDUSCSpeedometerGTAV
                     config.GetValue<int>("Units_Settings", "UseKMH", 0);
                     break;
             }
-            
+
             switch (isABSHUD)
             {
                 case true:
@@ -1012,6 +1055,7 @@ namespace TDUSCSpeedometerGTAV
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 0);
                     HUDBackground = "!TDUSCDemoHUDBackground";
                     BackgroundTextureName = "background";
+                    BackgroundTextureNameUIFixed = "background_UIFixed";
                     HUDABS = "ABS";
                     HUDTCS = "TCS";
                     HUDSpeed = "!TDUSCDemoHUDSpeed";
@@ -1029,6 +1073,7 @@ namespace TDUSCSpeedometerGTAV
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 1);
                     HUDBackground = "!TDUSCReleaseHUDBackground";
                     BackgroundTextureName = "background";
+                    BackgroundTextureNameUIFixed = "background_UIFixed";
                     HUDABS = "ABS";
                     HUDTCS = "TCS";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
@@ -1046,6 +1091,7 @@ namespace TDUSCSpeedometerGTAV
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 2);
                     HUDBackground = "!TDUSCReleaseHUDBackground";
                     BackgroundTextureName = "background_Season5_V1";
+                    BackgroundTextureNameUIFixed = "background_Season5_UIFixed";
                     HUDABS = "ABS_Season5";
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
@@ -1063,6 +1109,7 @@ namespace TDUSCSpeedometerGTAV
                     config.GetValue<int>("HUD_SETTINGS", "Version_HUD", 3);
                     HUDBackground = "!TDUSCReleaseHUDBackground";
                     BackgroundTextureName = "background_Season5_V2";
+                    BackgroundTextureNameUIFixed = "background_Season5_UIFixed";
                     HUDABS = "ABS_Season5";
                     HUDTCS = "TCS_Season5";
                     HUDSpeed = "!TDUSCReleaseHUDSpeed";
@@ -1076,7 +1123,7 @@ namespace TDUSCSpeedometerGTAV
                     LockSpeedSeason5Only = true;
                     break;
             }
-            
+
             switch (isUnitsLanguage)
             {
                 case 0:
@@ -1121,7 +1168,7 @@ namespace TDUSCSpeedometerGTAV
             BackgroundTextureImage2 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, BackgroundTextureName2);
 
             ImageKMH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, activeTextureKMHLanguageName);
-            
+
             ImageMPH = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, activeTextureMPHLanguageName);
 
             DriftTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, DriftTextureName);
@@ -1129,11 +1176,14 @@ namespace TDUSCSpeedometerGTAV
             HandbrakeTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HandbrakeTextureName);
 
             speedTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDSpeed, "speed_0000");
+            speedTextureImageKnots = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDSpeed, "speed_0000");
 
             RevTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDRev, "rev_0000");
+            RevTextureImageSpeedPlanes = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDRev, "rev_0000");
+            RevTextureImageSpeedBoatsSameCars = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDRev, "rev_0000");
 
             LabelRPMDeafult = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPMDefaultName);
-            
+
             LabelRPM_2000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2000_Name);
             LabelRPM_2200 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2200_Name);
             LabelRPM_2400 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_2400_Name);
@@ -1184,7 +1234,7 @@ namespace TDUSCSpeedometerGTAV
             LabelRPM_17000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_17000_Name);
             LabelRPM_18000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_18000_Name);
             LabelRPM_19000 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, LabelRPM_19000_Name);
-            
+
 
             ABSTextureImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, HUDABS);
 
@@ -1199,23 +1249,68 @@ namespace TDUSCSpeedometerGTAV
             gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
             gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
 
+            gearTexture_Automatic = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
+            gearTexture_Red_Automatic = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, HUDGear);
+
             HeadlightsImage = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDBackground", "Lighting_season5");
             ThrottleImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalAccelerationSeason5V2", "_000");
             BrakeImageHUD = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDPedalBrakeSeason5V2", "_000");
 
             HUDLockSpeed = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDLockSpeed_Dict, HUDLockSpeed_Name);
             HUDEnableLockSpeed = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDEnableLockSpeed_Dict, HUDEnableLockSpeed_Name);
+
+            ImageSpeedBoat = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDBackground", ImageSpeedBoatName);
+
+            ImageKNOTS = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, "knots");
+
+            ImageSpeedPlanes = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, ImageSpeedPlanesName);
+
+            ImageTextPlaneSeason5V2 = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), "!TDUSCReleaseHUDBackground", "background_Plane_Season5_V2");
+
+            SpeedometerBackgroundUIFixed = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDBackground, BackgroundTextureNameUIFixed);
         }
-      //  private bool categorySpeedoEnabled;
 
         private string categoryName;
-
+        private int delaySpeedBoat;
         private void OnTick(object sender, EventArgs e)
         {
+            Ped player = Game.Player.Character;
+            if (!player.IsInVehicle()) return;
+
+            Vehicle veh = player.CurrentVehicle;
+
+            // เครื่องบินเท่านั้น
+            currentSpeedKnots = veh.Speed * 1.943844f;
+            // 2. ล็อกค่าให้อยู่ในช่วง minSpeed (0) ถึง maxSpeed (120)
+            float clampedSpeed = ClampSpeed(currentSpeedKnots, minSpeedKnotsPlane, maxSpeedKnotsPlane);
+
+            // 3. แปลงเป็นสัดส่วน 0.0 - 1.0 (เผื่อใช้ทำหลอด UI หรือคำนวณเปอร์เซ็นต์)
+            float speedPercent = ((clampedSpeed - minSpeedKnotsPlane) / (maxSpeedKnotsPlane - minSpeedKnotsPlane)) * 1799f;
+
+            string speedTextKnots = speedPercent.ToString("0000");
+            string clampedSpeedText = clampedSpeed.ToString("F0");
+
+            currentSpeedPlanes = speedTextKnots;
+            
+            // เรือเท่านั้น
+            currentSpeedBoats = veh.Speed* isSwitchUnits;
+            float clampedSpeedBoat = ClampSpeed(currentSpeedBoats, minSpeedKnotsBoats, maxSpeedKnotsBoats);
+
+            // 3. แปลงเป็นสัดส่วน 0.0 - 1.0 (เผื่อใช้ทำหลอด UI หรือคำนวณเปอร์เซ็นต์)
+            float speedPercentBoat = ((clampedSpeedBoat - minSpeedKnotsBoats) / (maxSpeedKnotsBoats - minSpeedKnotsBoats)) * 1799f;
+
+            string speedTextKnotsBoat = speedPercentBoat.ToString("0000");
+            string clampedSpeedTextBoat = clampedSpeedBoat.ToString("F0");
+            currentSpeedImageBoats = speedTextKnotsBoat;
+            
             VehicleEnterExit();
             _menuPool.Process();
             TDUSC_HUDTick();
             float setones = setone;
+
+            ImageTextPlaneSeason5V2.Dictionary = HUDBackground;
+            ImageTextPlaneSeason5V2.Position = new PointF(UIPositionX, UIPositionY);
+            ImageTextPlaneSeason5V2.Size = new SizeF(UISize, UISize);
 
             HUDEnableLockSpeed.Dictionary = HUDBackground;
             HUDEnableLockSpeed.Texture = HUDEnableLockSpeed_Name;
@@ -1234,6 +1329,11 @@ namespace TDUSCSpeedometerGTAV
             BackgroundTextureImage2.Dictionary = HUDBackground;
             BackgroundTextureImage2.Position = new PointF(UIPositionX, UIPositionY);
             BackgroundTextureImage2.Size = new SizeF(UISize, UISize);
+
+            SpeedometerBackgroundUIFixed.Texture = BackgroundTextureNameUIFixed;
+            SpeedometerBackgroundUIFixed.Dictionary = HUDBackground;
+            SpeedometerBackgroundUIFixed.Position = new PointF(UIPositionX, UIPositionY);
+            SpeedometerBackgroundUIFixed.Size = new SizeF(UISize, UISize);
 
             ImageKMH.Dictionary = HUDBackground;
             ImageKMH.Position = new PointF(UIPositionX, UIPositionY);
@@ -1273,6 +1373,10 @@ namespace TDUSCSpeedometerGTAV
             speedTextureImage.Position = new PointF(UIPositionX, UIPositionY);
             speedTextureImage.Size = new SizeF(UISize, UISize);
 
+            speedTextureImageKnots.Dictionary = HUDSpeed;
+            speedTextureImageKnots.Position = new PointF(UIPositionX, UIPositionY);
+            speedTextureImageKnots.Size = new SizeF(UISize, UISize);
+
             gearTexture.Dictionary = HUDGear;
             gearTexture.Position = new PointF(UIPositionX, UIPositionY);
             gearTexture.Size = new SizeF(UISize, UISize);
@@ -1281,15 +1385,40 @@ namespace TDUSCSpeedometerGTAV
             gearTexture_Red.Position = new PointF(UIPositionX, UIPositionY);
             gearTexture_Red.Size = new SizeF(UISize, UISize);
 
+
+            gearTexture_Automatic.Dictionary = HUDGear;
+            gearTexture_Automatic.Position = new PointF(UIPositionX, UIPositionY);
+            gearTexture_Automatic.Size = new SizeF(UISize, UISize);
+
+            gearTexture_Red_Automatic.Dictionary = HUDGear;
+            gearTexture_Red_Automatic.Position = new PointF(UIPositionX, UIPositionY);
+            gearTexture_Red_Automatic.Size = new SizeF(UISize, UISize);
+
+            ImageKNOTS.Dictionary = HUDBackground;
+            ImageKNOTS.Position = new PointF(UIPositionX, UIPositionY);
+            ImageKNOTS.Size = new SizeF(UISize, UISize);
+
+            ImageSpeedPlanes.Dictionary = HUDBackground;
+            ImageSpeedPlanes.Position = new PointF(UIPositionX, UIPositionY);
+            ImageSpeedPlanes.Size = new SizeF(UISize, UISize);
+
             RevTextureImage.Dictionary = HUDRev;
             RevTextureImage.Position = new PointF(UIPositionX, UIPositionY);
             RevTextureImage.Size = new SizeF(UISize, UISize);
+
+            RevTextureImageSpeedPlanes.Dictionary = HUDRev;
+            RevTextureImageSpeedPlanes.Position = new PointF(UIPositionX, UIPositionY);
+            RevTextureImageSpeedPlanes.Size = new SizeF(UISize, UISize);
+
+            RevTextureImageSpeedBoatsSameCars.Dictionary = HUDRev;
+            RevTextureImageSpeedBoatsSameCars.Position = new PointF(UIPositionX, UIPositionY);
+            RevTextureImageSpeedBoatsSameCars.Size = new SizeF(UISize, UISize);
 
             LabelRPMDeafult.Dictionary = HUDBackground;
             LabelRPMDeafult.Position = new PointF(UIPositionX, UIPositionY);
             LabelRPMDeafult.Size = new SizeF(UISize, UISize);
 
-            LabelRPM_2000.Dictionary = HUDBackground;          
+            LabelRPM_2000.Dictionary = HUDBackground;
             LabelRPM_2000.Position = new PointF(UIPositionX, UIPositionY);
             LabelRPM_2000.Size = new SizeF(UISize, UISize);
 
@@ -1506,6 +1635,9 @@ namespace TDUSCSpeedometerGTAV
             BrakeImageHUD.Position = new PointF(UIPositionX, UIPositionY);
             BrakeImageHUD.Size = new SizeF(UISize, UISize);
 
+            ImageSpeedBoat.Position = new PointF(UIPositionX, UIPositionY);
+            ImageSpeedBoat.Size = new SizeF(UISize, UISize);
+
             HeadlightsImage.Color = Color.FromArgb(headlightToggle, 255, 255, 255);
 
             float throttleInput = Game.GetControlValueNormalized(GTA.Control.VehicleAccelerate);
@@ -1522,70 +1654,94 @@ namespace TDUSCSpeedometerGTAV
             switch (categoryName)
             {
                 case "Compacts":
-                    statusHUD = true;
-                    break;
                 case "Sedans":
-                    statusHUD = true;
-                    break;
                 case "SUV":
-                    statusHUD = true;
-                    break;
                 case "Coupes":
-                    statusHUD = true;
-                    break;
                 case "Muscle":
-                    statusHUD = true;
-                    break;
                 case "SportsClassics":
-                    statusHUD = true;
-                    break;
                 case "Sports":
-                    statusHUD = true;
-                    break;
                 case "Super":
-                    statusHUD = true;
-                    break;
                 case "Motorcycles":
-                    statusHUD = true;
-                    break;
                 case "OffRoad":
-                    statusHUD = true;
-                    break;
                 case "Industrial":
-                    statusHUD = true;
-                    break;
                 case "Utility":
-                    statusHUD = true;
-                    break;
                 case "Vans":
+                case "Service":
+                case "Emergency":
+                case "Military":
+                case "Commercial":
+                case "OpenWheel":
                     statusHUD = true;
+                    isRPMUICarOnly = true;
+                    isGearSequence = true;
+                    isGearAuto = false;
+                    isHUDKNOTS = false;
+                    isRPMUIBoatOnly = false;
+                    isSpeedUIPlaneOnly = false;
+                    isRevSpeedPlaneCurrent = false;
+                    isHUDThrottleReverseThrust = false;
+                    isRevSpeedBoatsCurrent = false;
                     break;
                 case "Cycles":
                     statusHUD = false;
+                    isRPMUICarOnly = false;
+                    isHUDKNOTS = false;
+                    isRPMUIBoatOnly = false;
+                    isSpeedUIPlaneOnly = false;
+                    isRevSpeedPlaneCurrent = false;
+                    isHUDThrottleReverseThrust = false;
+                    isRevSpeedBoatsCurrent = false;
+                    isRevEngineCurrent = false;
                     break;
                 case "Boats":
-                    statusHUD = false;
+                    statusHUD = true;
+                    isRPMUICarOnly = false;
+                    isGearSequence = false;
+                    isGearAuto = true;
+                    isHUDKNOTS = false;
+                    isRPMUIBoatOnly = true;
+                    isSpeedUIPlaneOnly = false;
+                    isRevSpeedPlaneCurrent = false;
+                    isHUDThrottleReverseThrust = false;
+                    isRevSpeedBoatsCurrent = true;
+                    isRevEngineCurrent = false;
                     break;
                 case "Helicopters":
-                    statusHUD = false;
+                    statusHUD = true;
+                    isRPMUICarOnly = false;
+                    isGearSequence = false;
+                    isGearAuto = false;
+                    isHUDKNOTS = true;
+                    isRPMUIBoatOnly = false;
+                    isSpeedUIPlaneOnly = true;
+                    isRevSpeedPlaneCurrent = true;
+                    isHUDThrottleReverseThrust = true;
+                    isRevSpeedBoatsCurrent = false;
+                    isRevEngineCurrent = false;
                     break;
                 case "Planes":
-                    statusHUD = false;
-                    break;
-                case "Service":
                     statusHUD = true;
+                    isRPMUICarOnly = false;
+                    isGearSequence = false;
+                    isGearAuto = false;
+                    isHUDKNOTS = true;
+                    isRPMUIBoatOnly = false;
+                    isSpeedUIPlaneOnly = true;
+                    isRevSpeedPlaneCurrent = true;
+                    isHUDThrottleReverseThrust = true;
+                    isRevSpeedBoatsCurrent = false;
+                    isRevEngineCurrent = false;
                     break;
-                case "Emergency":
-                    statusHUD = true;
-                    break;
-                case "Military":
-                    statusHUD = true;
-                    break;
-                case "Commercial":
-                    statusHUD = true;
-                    break;
-                case "OpenWheel":
-                    statusHUD = true;
+                default:
+                    isGearSequence = true;
+                    isGearAuto = false;
+                    isHUDKNOTS = false;
+                    isRPMUIBoatOnly = false;
+                    isSpeedUIPlaneOnly = false;
+                    isRevSpeedPlaneCurrent = false;
+                    isHUDThrottleReverseThrust = false;
+                    isRevSpeedBoatsCurrent = false;
+                    isRevEngineCurrent = false;
                     break;
             }
         }
@@ -1600,10 +1756,18 @@ namespace TDUSCSpeedometerGTAV
         // TDU Solar Crown Speedometer
         private bool isMainHUDModEnabled;
         private bool isHideHUDForOpenPhoneorCharacterWheel;
+        private bool isRPMUICarOnly;
+        private bool isRPMUIBoatOnly;
+        private bool isSpeedUIPlaneOnly;
+        private bool isGearAuto;
+        private bool isGearSequence;
+        private bool isRevSpeedPlaneCurrent;
+        private bool isRevSpeedBoatsCurrent;
         private bool isRevEngineCurrent;
         private bool isABSHUD;
         private bool isTCSHUD;
         private bool statusHUD;
+        private bool isHUDKNOTS;
 
         private bool headlightsSeason5;
         private void TDUSC_HUDTick()
@@ -1628,7 +1792,7 @@ namespace TDUSCSpeedometerGTAV
                         // แปลงความเร็วปัจจุบันของรถจาก m/s เป็น KM/H เพื่อใช้อ้างอิง
                         float currentSpeedKmh = vehicleStatus.Speed * isSwitchUnits;
 
-                        
+
 
                         // Turn on headlights automatically if desired
                         if (vehicleStatus.AreHighBeamsOn)
@@ -1720,6 +1884,7 @@ namespace TDUSCSpeedometerGTAV
 
                             // Set Display REV RPM
                             // Max 3k
+
                             if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
                             {
                                 // 1202
@@ -2655,247 +2820,287 @@ namespace TDUSCSpeedometerGTAV
                             // Ensure the player is actually in a vehicle
                             if (currentVehicle != null && currentVehicle.Exists())
                             {
+
                                 // Outline
                                 BackgroundTextureImage2.Draw();
                                 BackgroundTextureImage.Draw();
-
-                                if (isKMH)
+                                if (!isHUDKNOTS)
                                 {
-                                    ImageKMH.Draw();
-                                }
-
-                                if (isMPH)
-                                {
-                                    ImageMPH.Draw();
-                                }
-
-
-                                speedTextureImage.Draw();
-
-
-                                if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
-                                {
-                                    LabelRPM_2000.Draw();
-                                }
-                                else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
-                                {
-                                    LabelRPM_2200.Draw();
-                                }
-                                else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
-                                {
-                                    LabelRPM_2400.Draw();
-                                }
-                                else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
-                                {
-                                    LabelRPM_2600.Draw();
-                                }
-                                else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
-                                {
-                                    LabelRPM_2800.Draw();
-                                }
-                                else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
-                                {
-                                    LabelRPM_3000.Draw();
-                                }
-                                else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
-                                {
-                                    LabelRPM_4000.Draw();
-                                }
-                                else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
-                                {
-                                    LabelRPM_4500.Draw();
-                                }
-                                else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
-                                {
-                                    LabelRPM_5000.Draw();
-                                }
-                                else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
-                                {
-                                    LabelRPM_5200.Draw();
-                                }
-                                else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
-                                {
-                                    LabelRPM_5400.Draw();
-                                }
-                                else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
-                                {
-                                    LabelRPM_5600.Draw();
-                                }
-                                else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
-                                {
-                                    LabelRPM_5800.Draw();
-                                }
-                                else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
-                                {
-                                    LabelRPM_6000.Draw();
-                                }
-                                else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
-                                {
-                                    LabelRPM_6200.Draw();
-                                }
-                                else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
-                                {
-                                    LabelRPM_6400.Draw();
-                                }
-                                else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
-                                {
-                                    LabelRPM_6600.Draw();
-                                }
-                                else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
-                                {
-                                    LabelRPM_6800.Draw();
-                                }
-                                else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
-                                {
-                                    LabelRPM_7000.Draw();
-                                }
-                                else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
-                                {
-                                    LabelRPM_7200.Draw();
-                                }
-                                else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
-                                {
-                                    LabelRPM_7400.Draw();
-                                }
-                                else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
-                                {
-                                    LabelRPM_7600.Draw();
-                                }
-                                else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
-                                {
-                                    LabelRPM_7800.Draw();
-                                }
-                                else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
-                                {
-                                    LabelRPM_8000.Draw();
-                                }
-                                else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
-                                {
-                                    LabelRPM_8200.Draw();
-                                }
-                                else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
-                                {
-                                    LabelRPM_8400.Draw();
-                                }
-                                else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
-                                {
-                                    LabelRPM_8600.Draw();
-                                }
-                                else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
-                                {
-                                    LabelRPM_8800.Draw();
-                                }
-                                else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
-                                {
-                                    LabelRPM_9000.Draw();
-                                }
-                                else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
-                                {
-                                    LabelRPM_9200.Draw();
-                                }
-                                else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
-                                {
-                                    LabelRPM_9400.Draw();
-                                }
-                                else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
-                                {
-                                    LabelRPM_9600.Draw();
-                                }
-                                else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
-                                {
-                                    LabelRPM_9800.Draw();
-                                }
-                                else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
-                                {
-                                    LabelRPM_10000.Draw();
-                                }
-                                else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
-                                {
-                                    LabelRPM_10500.Draw();
-                                }
-                                else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
-                                {
-                                    LabelRPM_11000.Draw();
-                                }
-                                else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
-                                {
-                                    LabelRPM_11500.Draw();
-                                }
-                                else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
-                                {
-                                    LabelRPM_12000.Draw();
-                                }
-                                else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
-                                {
-                                    LabelRPM_12500.Draw();
-                                }
-                                else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
-                                {
-                                    LabelRPM_13000.Draw();
-                                }
-                                else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
-                                {
-                                    LabelRPM_13500.Draw();
-                                }
-                                else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
-                                {
-                                    LabelRPM_14000.Draw();
-                                }
-                                else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
-                                {
-                                    LabelRPM_14500.Draw();
-                                }
-                                else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
-                                {
-                                    LabelRPM_15000.Draw();
-                                }
-                                else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
-                                {
-                                    LabelRPM_15500.Draw();
-                                }
-                                else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
-                                {
-                                    LabelRPM_16000.Draw();
-                                }
-                                else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
-                                {
-                                    LabelRPM_16500.Draw();
-                                }
-                                else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
-                                {
-                                    LabelRPM_17000.Draw();
-                                }
-                                else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
-                                {
-                                    LabelRPM_18000.Draw();
-                                }
-                                else if (SetRPM >= rpm_19000 && SetRPM < 20000)
-                                {
-                                    LabelRPM_19000.Draw();
-                                }
-                                else
-                                {
-                                    LabelRPMDeafult.Draw();
-                                }
-
-                                if (gearhudcolour_default)
-                                {
-                                    if (gearTexture != null)
+                                    if (isKMH)
                                     {
-                                        gearTexture.Draw();
+                                        ImageKMH.Draw();
+                                    }
+
+                                    if (isMPH)
+                                    {
+                                        ImageMPH.Draw();
                                     }
                                 }
-                                if (gearhudcolour_red)
+
+                                if (isHUDKNOTS)
                                 {
-                                    if (gearTexture_Red != null)
+                                    ImageKNOTS.Draw();
+                                    speedTextureImageKnots.Draw();
+                                }
+
+                                if (!isHUDKNOTS) // Speed Default
+                                {
+                                    speedTextureImage.Draw();
+                                }
+
+                                if (isRPMUICarOnly)
+                                {
+                                    if (SetRPM >= rpm_2000 && SetRPM < rpm_2200)
                                     {
-                                        gearTexture_Red.Draw();
+                                        LabelRPM_2000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_2200 && SetRPM < rpm_2400)
+                                    {
+                                        LabelRPM_2200.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_2400 && SetRPM < rpm_2600)
+                                    {
+                                        LabelRPM_2400.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_2600 && SetRPM < rpm_2800)
+                                    {
+                                        LabelRPM_2600.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_2800 && SetRPM < rpm_3000)
+                                    {
+                                        LabelRPM_2800.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_3000 && SetRPM < rpm_4000)
+                                    {
+                                        LabelRPM_3000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_4000 && SetRPM < rpm_4500)
+                                    {
+                                        LabelRPM_4000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_4500 && SetRPM < rpm_5000)
+                                    {
+                                        LabelRPM_4500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_5000 && SetRPM < rpm_5200)
+                                    {
+                                        LabelRPM_5000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_5200 && SetRPM < rpm_5400)
+                                    {
+                                        LabelRPM_5200.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_5400 && SetRPM < rpm_5600)
+                                    {
+                                        LabelRPM_5400.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_5600 && SetRPM < rpm_5800)
+                                    {
+                                        LabelRPM_5600.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_5800 && SetRPM < rpm_6000)
+                                    {
+                                        LabelRPM_5800.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_6000 && SetRPM < rpm_6200)
+                                    {
+                                        LabelRPM_6000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_6200 && SetRPM < rpm_6400)
+                                    {
+                                        LabelRPM_6200.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_6400 && SetRPM < rpm_6600)
+                                    {
+                                        LabelRPM_6400.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_6600 && SetRPM < rpm_6800)
+                                    {
+                                        LabelRPM_6600.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_6800 && SetRPM < rpm_7000)
+                                    {
+                                        LabelRPM_6800.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_7000 && SetRPM < rpm_7200)
+                                    {
+                                        LabelRPM_7000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_7200 && SetRPM < rpm_7400)
+                                    {
+                                        LabelRPM_7200.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_7400 && SetRPM < rpm_7600)
+                                    {
+                                        LabelRPM_7400.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_7600 && SetRPM < rpm_7800)
+                                    {
+                                        LabelRPM_7600.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_7800 && SetRPM < rpm_8000)
+                                    {
+                                        LabelRPM_7800.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_8000 && SetRPM < rpm_8200)
+                                    {
+                                        LabelRPM_8000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_8200 && SetRPM < rpm_8400)
+                                    {
+                                        LabelRPM_8200.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_8400 && SetRPM < rpm_8600)
+                                    {
+                                        LabelRPM_8400.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_8600 && SetRPM < rpm_8800)
+                                    {
+                                        LabelRPM_8600.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_8800 && SetRPM < rpm_9000)
+                                    {
+                                        LabelRPM_8800.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_9000 && SetRPM < rpm_9200)
+                                    {
+                                        LabelRPM_9000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_9200 && SetRPM < rpm_9400)
+                                    {
+                                        LabelRPM_9200.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_9400 && SetRPM < rpm_9600)
+                                    {
+                                        LabelRPM_9400.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_9600 && SetRPM < rpm_9800)
+                                    {
+                                        LabelRPM_9600.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_9800 && SetRPM < rpm_10000)
+                                    {
+                                        LabelRPM_9800.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_10000 && SetRPM < rpm_10500)
+                                    {
+                                        LabelRPM_10000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_10500 && SetRPM < rpm_11000)
+                                    {
+                                        LabelRPM_10500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_11000 && SetRPM < rpm_11500)
+                                    {
+                                        LabelRPM_11000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_11500 && SetRPM < rpm_12000)
+                                    {
+                                        LabelRPM_11500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_12000 && SetRPM < rpm_12500)
+                                    {
+                                        LabelRPM_12000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_12500 && SetRPM < rpm_13000)
+                                    {
+                                        LabelRPM_12500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_13000 && SetRPM < rpm_13500)
+                                    {
+                                        LabelRPM_13000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_13500 && SetRPM < rpm_14000)
+                                    {
+                                        LabelRPM_13500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_14000 && SetRPM < rpm_14500)
+                                    {
+                                        LabelRPM_14000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_14500 && SetRPM < rpm_15000)
+                                    {
+                                        LabelRPM_14500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_15000 && SetRPM < rpm_15500)
+                                    {
+                                        LabelRPM_15000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_15500 && SetRPM < rpm_16000)
+                                    {
+                                        LabelRPM_15500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_16000 && SetRPM < rpm_16500)
+                                    {
+                                        LabelRPM_16000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_16500 && SetRPM < rpm_17000)
+                                    {
+                                        LabelRPM_16500.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_17000 && SetRPM < rpm_18000)
+                                    {
+                                        LabelRPM_17000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_18000 && SetRPM < rpm_19000)
+                                    {
+                                        LabelRPM_18000.Draw();
+                                    }
+                                    else if (SetRPM >= rpm_19000 && SetRPM < 20000)
+                                    {
+                                        LabelRPM_19000.Draw();
+                                    }
+                                    else
+                                    {
+                                        LabelRPMDeafult.Draw();
+                                    }
+
+                                    SpeedometerBackgroundUIFixed.Draw();
+                                }
+                                if (isRPMUIBoatOnly)
+                                {
+                                    ImageSpeedBoat.Draw();
+                                }
+
+                                if (isSpeedUIPlaneOnly)
+                                {
+                                    ImageSpeedPlanes.Draw();
+                                }
+
+                                if (isGearSequence)
+                                {
+                                    if (gearhudcolour_default)
+                                    {
+                                        if (gearTexture != null)
+                                        {
+                                            gearTexture.Draw();
+                                        }
+                                    }
+                                    if (gearhudcolour_red)
+                                    {
+                                        if (gearTexture_Red != null)
+                                        {
+                                            gearTexture_Red.Draw();
+                                        }
                                     }
                                 }
-                                // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
-                                if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
+
+                                if (isGearAuto)
                                 {
-                                    HandbrakeTextureImage.Draw();
+                                    if (gearhudcolour_default)
+                                    {
+                                        if (gearTexture_Automatic != null)
+                                        {
+                                            gearTexture_Automatic.Draw();
+                                        }
+                                    }
+                                    if (gearhudcolour_red)
+                                    {
+                                        if (gearTexture_Red_Automatic != null)
+                                        {
+                                            gearTexture_Red_Automatic.Draw();
+                                        }
+                                    }
                                 }
 
                                 Vehicle veh = playerPed.CurrentVehicle;
@@ -2915,6 +3120,38 @@ namespace TDUSCSpeedometerGTAV
                                 // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
                                 speedTextureImage.Texture = textureName;
 
+                                currentSpeedText = speedInt;
+
+                                // Speed KNOTS
+
+                                // GTA V returns vehicle speed in meters per second (m/s)
+                                float speedInMetersPerSecond = currentVehicle.Speed;
+
+                                // Convert m/s to knots (1 m/s ≈ 1.943844 knots)
+                                double speedKmhKnots = speedInMetersPerSecond * 1.943844;
+
+                                // กำหนดเพดานความเร็วไม่ให้เกิน 1000 (ตามชื่อรูปภาพของคุณ)
+                                if (speedKmhKnots > 1799f) speedKmhKnots = 1799f;
+                                if (speedKmhKnots < 0f) speedKmhKnots = 0f;
+
+                                // แปลงค่าความเร็วเป็นตัวเลข 4 หลัก เช่น 0000, 0120, 1000
+                                int speedKnotsInt = (int)Math.Round(speedKmhKnots);
+                                string textureNameKnots = SpeedBaseTextureName + speedKnotsInt.ToString("D4");
+
+                                // อัปเดตชื่อ Texture ปัจจุบันตามความเร็วรถ
+                                speedTextureImageKnots.Texture = textureNameKnots;
+
+                                if (isRevSpeedPlaneCurrent)
+                                {
+                                    RevTextureImageSpeedPlanes.Texture = $"rev_{currentSpeedPlanes}";
+                                    RevTextureImageSpeedPlanes.Draw();
+                                }
+
+                                if (isRevSpeedBoatsCurrent)
+                                {
+                                    RevTextureImageSpeedBoatsSameCars.Texture = $"rev_{currentSpeedImageBoats}";
+                                    RevTextureImageSpeedBoatsSameCars.Draw();
+                                }
 
                                 if (isRevEngineCurrent)
                                 {
@@ -2927,19 +3164,10 @@ namespace TDUSCSpeedometerGTAV
 
                                     // ส่งค่าสะสมที่นิ่งแล้ว ไปแปลงชื่อภาพ
                                     // (ปรับ Min/Max เผื่อไว้ให้ด้วย: เดินเบา 0.2f สูงสุด 1.0f)
-                                    string RPMtextureName = GetTextureNameFromRange(smoothedRpm, 0.2f, 1.0f);
+                                    string RPMtextureName = GetTextureNameFromRangeRPM(smoothedRpm, 0.2f, 1.0f);
 
                                     RevTextureImage.Texture = RPMtextureName;
                                     RevTextureImage.Draw();
-                                }
-
-                                if (isABSHUD)
-                                {
-                                    ABSTextureImage.Draw();
-                                }
-                                if (isTCSHUD)
-                                {
-                                    TCSTextureImage.Draw();
                                 }
 
                                 Vehicle playerVeh = Game.Player.Character.CurrentVehicle;
@@ -2948,17 +3176,20 @@ namespace TDUSCSpeedometerGTAV
                                 {
                                     isEngineOn = playerVeh.IsEngineRunning;
 
-                                    // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
-                                    if (isEngineOn)
+                                    if (isRPMUICarOnly)
                                     {
-                                        // Engine On
-                                        isRevEngineCurrent = true;
-                                    }
-                                    else
-                                    {
-                                        // Engine Off
-                                        RevEngineOffImage.Draw();
-                                        isRevEngineCurrent = false;
+                                        // อัปเดตสีของไอคอนตามสถานะเครื่องยนต์
+                                        if (isEngineOn)
+                                        {
+                                            // Engine On
+                                            isRevEngineCurrent = true;
+                                        }
+                                        else
+                                        {
+                                            // Engine Off
+                                            RevEngineOffImage.Draw();
+                                            isRevEngineCurrent = false;
+                                        }
                                     }
                                 }
 
@@ -2983,6 +3214,8 @@ namespace TDUSCSpeedometerGTAV
                                     {
                                         string textureNameGear = GetGearTextureName(currentGear, isNeutral);
 
+                                        string textureNameGearAutomatic = GetGearTextureNameAutomatic(currentGear, isNeutral);
+
                                         // เรียกใช้ LemonUI ดึงภาพตรงจาก script_txds.rpf
                                         // พิกัดมุมขวาล่างจอ 16:9 (X: 1160, Y: 620) ขนาดรูปภาพ (56x56 พิกเซล)
                                         gearTexture = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, textureNameGear);
@@ -2990,6 +3223,14 @@ namespace TDUSCSpeedometerGTAV
 
                                         gearTexture_Red = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, textureNameGear);
                                         gearTexture_Red.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
+
+
+                                        gearTexture_Automatic = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, textureNameGearAutomatic);
+                                        gearTexture_Automatic.Color = Color.FromArgb(A_GearColour, R_GearColour, G_GearColour, B_GearColour);
+
+                                        gearTexture_Red_Automatic = new ScaledTexture(new PointF(UIPositionX, UIPositionY), new SizeF(UISize, UISize), HUDGear, textureNameGearAutomatic);
+                                        gearTexture_Red_Automatic.Color = Color.FromArgb(A_GearColour_Red, R_GearColour_Red, G_GearColour_Red, B_GearColour_Red);
+
 
                                         lastGear = currentGear;
                                         wasNeutral = isNeutral;
@@ -3007,40 +3248,66 @@ namespace TDUSCSpeedometerGTAV
                                     gearTexture_Red = null;
                                 }
 
-                                if (TurnSignalLeft_Enabled)
-                                {
-                                    TurnSignalLeft.Draw();
-                                }
-                                if (TurnSignalRight_Enabled)
-                                {
-                                    TurnSignalRight.Draw();
-                                }
-                                if (headlightsSeason5)
-                                {
-                                    HeadlightsImage.Draw();
-                                }
                                 if (isHUDThrottleAndBrakeSeason5)
                                 {
                                     ThrottleImageHUD.Draw();
                                     BrakeImageHUD.Draw();
                                 }
 
-                                if (LockSpeedSeason5Only)
-                                {
-                                    if (isLimiterSpeed)
-                                    {
-                                        HUDLockSpeed.Draw();
-                                        HUDEnableLockSpeed.Draw();
-                                        float speedMetersPerSecond = maxSpeedKMH / isSwitchUnits;
-                                        Function.Call(Hash.SET_ENTITY_MAX_SPEED, veh, speedMetersPerSecond);
-                                    }
-                                    else if (!isLimiterSpeed)
-                                    {
-                                        // 1. ทลายกำแพงความเร็วให้รถวิ่งได้เต็มสมรรถนะเดิมของ Handling 
-                                        Function.Call(Hash.SET_ENTITY_MAX_SPEED, veh, 500.0f);
 
-                                        // 2. รีเซ็ตแรงบิดและกลไกเกียร์กลับสู่ค่าดีฟอลต์ดั้งเดิม (เปิดทางให้สกิลทำงานได้สมบูรณ์)
-                                        Function.Call(Hash.MODIFY_VEHICLE_TOP_SPEED, veh, 1.0f);
+                                if (isRPMUICarOnly)
+                                {
+                                    if (TurnSignalLeft_Enabled)
+                                    {
+                                        TurnSignalLeft.Draw();
+                                    }
+                                    if (TurnSignalRight_Enabled)
+                                    {
+                                        TurnSignalRight.Draw();
+                                    }
+                                    if (headlightsSeason5)
+                                    {
+                                        HeadlightsImage.Draw();
+                                    }
+                                    if (isABSHUD)
+                                    {
+                                        ABSTextureImage.Draw();
+                                    }
+                                    if (isTCSHUD)
+                                    {
+                                        TCSTextureImage.Draw();
+                                    }
+                                    // Control.VehicleHandbrake corresponds to Spacebar on PC / R1 or RB on controllers
+                                    if (Game.IsControlPressed(GTA.Control.VehicleHandbrake))
+                                    {
+                                        HandbrakeTextureImage.Draw();
+                                    }
+
+                                    if (LockSpeedSeason5Only)
+                                    {
+                                        if (isLimiterSpeed)
+                                        {
+                                            HUDLockSpeed.Draw();
+                                            HUDEnableLockSpeed.Draw();
+                                            float speedMetersPerSecond = maxSpeedKMH / isSwitchUnits;
+                                            Function.Call(Hash.SET_ENTITY_MAX_SPEED, veh, speedMetersPerSecond);
+                                        }
+                                        else if (!isLimiterSpeed)
+                                        {
+                                            // 1. ทลายกำแพงความเร็วให้รถวิ่งได้เต็มสมรรถนะเดิมของ Handling 
+                                            Function.Call(Hash.SET_ENTITY_MAX_SPEED, veh, 500.0f);
+
+                                            // 2. รีเซ็ตแรงบิดและกลไกเกียร์กลับสู่ค่าดีฟอลต์ดั้งเดิม (เปิดทางให้สกิลทำงานได้สมบูรณ์)
+                                            Function.Call(Hash.MODIFY_VEHICLE_TOP_SPEED, veh, 1.0f);
+                                        }
+                                    }
+                                }
+
+                                if (isHUDThrottleReverseThrustMenuSelect)
+                                {
+                                    if (isHUDThrottleReverseThrust)
+                                    {
+                                        ImageTextPlaneSeason5V2.Draw();
                                     }
                                 }
                             }
@@ -3080,14 +3347,14 @@ namespace TDUSCSpeedometerGTAV
                 }
             }
         }
-        private string GetTextureNameFromRange(float currentValue, float minValue, float maxValue)
+        private string GetTextureNameFromRangeRPM(float currentValue, float minValue, float maxValue)
         {
             // ใช้ Math.Max/Min สำหรับ .NET 4.8
             currentValue = Math.Max(minValue, Math.Min(currentValue, maxValue));
 
             float normalized = (currentValue - minValue) / (maxValue - minValue);
 
-            // เปลี่ยนตัวคูณเป็น 1000 เพื่อให้ไล่ลำดับภาพทีละ 1 เฟรม (เช่น speed_0001, speed_0002)
+            // เปลี่ยนตัวคูณเป็น 1000 เพื่อให้ไล่ลำดับภาพทีละ 1 เฟรม (เช่น rpm_0001, rpm_0002)
             int textureValue = (int)Math.Round(normalized * rpmMax);
             textureValue = Math.Max(rpmMin, Math.Min(textureValue, rpmMax));
 
@@ -3101,6 +3368,14 @@ namespace TDUSCSpeedometerGTAV
             if (isNeutral) return "gear_n";       // ภาพ n.png (Neutral)
 
             return $"gear_{gear}";                // ภาพ 1.png ถึง 6.png ตามค่าเกียร์ที่ส่งมา
+        }
+
+        private string GetGearTextureNameAutomatic(int gear, bool isNeutral)
+        {
+            if (gear == 0) return "gear_r";       // ภาพ r.png (Reverse)
+            if (isNeutral) return "gear_n";       // ภาพ n.png (Neutral)
+
+            return $"gear_d";                // ภาพ 1.png ถึง 6.png ตามค่าเกียร์ที่ส่งมา
         }
         private void VehicleEnterExit()
         {
@@ -3168,9 +3443,12 @@ namespace TDUSCSpeedometerGTAV
                         // 3. Determine drift status and show subtitle
                         if (angle >= DriftAngleThreshold)
                         {
-                            if(isDriftHUD)
+                            if (isDriftHUD)
                             {
-                                DriftTextureImage.Draw();
+                                if (isRPMUICarOnly)
+                                {
+                                    DriftTextureImage.Draw();
+                                }
                             }
                         }
                     }
@@ -3181,7 +3459,7 @@ namespace TDUSCSpeedometerGTAV
         {
             switch (vClass)
             {
-                case VehicleClass.Compacts:return "Compacts";
+                case VehicleClass.Compacts: return "Compacts";
                 case VehicleClass.Sedans: return "Sedans";
                 case VehicleClass.SUVs: return "SUV";
                 case VehicleClass.Coupes: return "Coupes";
@@ -3261,7 +3539,16 @@ namespace TDUSCSpeedometerGTAV
                 GTA.UI.Screen.ShowSubtitle($"~r~[Error] Read file .cfg failed: {ex.Message}", 5000);
             }
         }
+
+        // ฟังก์ชัน Custom Clamp สำหรับ .NET 4.8
+        private float ClampSpeed(float value, float min, float max)
+        {
+            if (value < min) return min;
+            if (value > max) return max;
+            return value;
+        }
     }
+}
 
     public class CarData
     {
@@ -3273,4 +3560,4 @@ namespace TDUSCSpeedometerGTAV
             DisplayMaxRPM = displaymaxrpms;
         }
     }
-}
+
